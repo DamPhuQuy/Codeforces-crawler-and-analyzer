@@ -4,49 +4,24 @@
 version: '3.8'
 
 services:
-  # === POSTGRESQL DATABASE ===
   postgres_db:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: codeforces_db
+    env_file: .env # Nạp biến từ .env 
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: cf_analysis
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d cf_analysis"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # === APPLICATION (Java Swing GUI) ===
-  # LƯU Ý: Chạy GUI App trong Docker là rất khó khăn vì cần display (X11).
-  # Khuyến nghị: Chạy Database bằng Docker, và chạy App trực tiếp trên máy Host.
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: codeforces_app
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-    environment:
-      # Sửa cấu hình DB để trỏ về container postgres_db ở trên
-      - DB_HOST=postgres_db
-      - DB_PORT=5432
-      - DB_NAME=cf_analysis
-      - DB_USER=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      # Biến môi trường cho màn hình GUI (Yêu cầu cấu hình thêm X11 server ngoài Windows)
-      - DISPLAY=host.docker.internal:0
-    # Map thư mục db-config.properties và logs
-    volumes:
-      - ./db-config.properties:/app/db-config.properties
-    restart: unless-stopped
 
 volumes:
   pgdata:

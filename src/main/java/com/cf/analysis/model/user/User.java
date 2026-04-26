@@ -62,10 +62,6 @@ public class User {
         return handle;
     }
 
-    public void setHandle(String handle) {
-        this.handle = handle;
-    }
-
     public String getEmail() {
         return email;
     }

@@ -13,6 +13,10 @@ public class Problem {
 
     public Problem() {}
 
+    public Problem(Integer id) {
+        this.id = id;
+    }
+
     public Problem(Integer contestId, String problemsetName, String index, String name, String type, Float points, Integer rating, String[] tags) {
         this.contestId = contestId;
         this.problemsetName = problemsetName;
@@ -26,10 +30,6 @@ public class Problem {
 
     public Integer getId() {
         return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
     }
 
     public Integer getContestId() {

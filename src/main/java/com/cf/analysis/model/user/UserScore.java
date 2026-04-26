@@ -54,10 +54,6 @@ public class UserScore {
         return handle;
     }
 
-    public void setHandle(String handle) {
-        this.handle = handle;
-    }
-
     public String getDisplayName() {
         return displayName;
     }

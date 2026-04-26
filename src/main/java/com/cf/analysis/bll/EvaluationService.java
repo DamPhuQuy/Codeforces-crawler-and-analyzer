@@ -3,7 +3,9 @@ package com.cf.analysis.bll;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
+import com.cf.analysis.dal.UserScoreDAO;
 import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.user.Level;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.model.user.UserScore;
 
@@ -23,6 +25,7 @@ import java.util.*;
 public class EvaluationService {
 
     private final UserDAO       userDAO       = new UserDAO();
+    private final UserScoreDAO  userScoreDAO  = new UserScoreDAO();
     private final SubmissionDAO submissionDAO = new SubmissionDAO();
     private final AnalysisDAO   analysisDAO   = new AnalysisDAO();
 
@@ -42,7 +45,15 @@ public class EvaluationService {
     // ==================== Evaluate Single User ====================
 
     /**
-     * Tính điểm đánh giá cho một user.
+     * Lấy UserScore từ cache (database).
+     * @return UserScore đã được tính trước đó, hoặc null nếu chưa có.
+     */
+    public UserScore getUserScore(String handle) throws SQLException {
+        return userScoreDAO.findByHandle(handle);
+    }
+
+    /**
+     * Tính lại điểm đánh giá cho một user và lưu vào database.
      * @return UserScore với đầy đủ điểm, hoặc null nếu user không tồn tại.
      */
     public UserScore evaluateUser(String handle) throws SQLException {
@@ -66,7 +77,8 @@ public class EvaluationService {
             score.setOverallScore(0);
             score.setTopDataStructure("N/A");
             score.setTopAlgorithm("N/A");
-            score.setLevel("Unknown");
+            score.setLevel(Level.BEGINNER);
+            userScoreDAO.upsert(score);
             return score;
         }
 
@@ -106,15 +118,28 @@ public class EvaluationService {
         score.setOverallScore(clamp(overall));
 
         score.computeLevel();
+
+        // Lưu vào database
+        userScoreDAO.upsert(score);
+
         return score;
     }
 
     // ==================== Ranking ====================
 
     /**
-     * Lấy danh sách điểm của tất cả users, giảm dần theo overall score.
+     * Lấy danh sách điểm của tất cả users từ cache (database).
+     * Nhanh hơn nhiều so với tính toán lại.
      */
     public List<UserScore> getRanking() throws SQLException {
+        return userScoreDAO.findAll();
+    }
+
+    /**
+     * Tính lại điểm cho tất cả users và cập nhật vào database.
+     * Dùng khi cần refresh toàn bộ ranking.
+     */
+    public List<UserScore> recalculateAllScores() throws SQLException {
         List<User>      users  = userDAO.findAll();
         List<UserScore> scores = new ArrayList<>();
 

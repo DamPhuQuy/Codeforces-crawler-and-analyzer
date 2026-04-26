@@ -1,16 +1,20 @@
 package com.cf.analysis.model.submission;
 
+import java.time.LocalDateTime;
+
 import com.cf.analysis.model.party.Party;
 import com.cf.analysis.model.problem.Problem;
 
 public class Submission {
 
-    private Integer id = 0;
+    private Integer id;
+    private String userHandle = "";
+    private String language = "";
     private Integer contestId = 0;
     private Integer creationTimeSeconds = 0;
     private Integer relativeTimeSeconds = 0;
-    private Problem problem = new Problem();
-    private Party party = new Party();
+    private Integer problemId = 0;
+    private Integer partyId = 0;
     private String programmingLanguage = "";
     private Verdict verdict = Verdict.TESTING;
     private TestSet testSet = TestSet.SAMPLES;
@@ -19,17 +23,25 @@ public class Submission {
     private Integer memoryConsumedBytes = 0;
     private Float points = 0.0f;
 
+    private String sourceCode = "";
+
+    private LocalDateTime submittedAt;
+    private LocalDateTime crawledAt;
     private boolean analyzed = false;
 
     public Submission() {}
 
-    public Submission(Integer id, Integer contestId, Integer creationTimeSeconds, Integer relativeTimeSeconds, Problem problem, Party party, String programmingLanguage, Verdict verdict, TestSet testSet, Integer passedTestCount, Integer timeConsumedMillis, Integer memoryConsumedBytes, Float points) {
+    public Submission(Integer id) {
         this.id = id;
+    }
+
+    public Submission(Integer id, Integer contestId, Integer creationTimeSeconds, Integer relativeTimeSeconds, Problem problem, Party party, String programmingLanguage, Verdict verdict, TestSet testSet, Integer passedTestCount, Integer timeConsumedMillis, Integer memoryConsumedBytes, Float points) {
+        this.id = id != null ? id : null;
         this.contestId = contestId;
         this.creationTimeSeconds = creationTimeSeconds;
         this.relativeTimeSeconds = relativeTimeSeconds;
-        this.problem = problem;
-        this.party = party;
+        this.problemId = problem != null ? problem.getId() : 0;
+        this.partyId = party != null ? party.getId() : 0;
         this.programmingLanguage = programmingLanguage;
         this.verdict = verdict;
         this.testSet = testSet;
@@ -39,18 +51,6 @@ public class Submission {
         this.points = points;
     }
 
-    public String getShortLanguage() {
-        if (programmingLanguage == null) return "?";
-        if (programmingLanguage.contains("Java")) return "Java";
-        if (programmingLanguage.contains("Python")) return "Python";
-        if (programmingLanguage.contains("C++") || programmingLanguage.contains("G++") || programmingLanguage.contains("Clang")) return "C++";
-        if (programmingLanguage.contains("C#")) return "C#";
-        if (programmingLanguage.contains("Kotlin")) return "Kotlin";
-        if (programmingLanguage.contains("Rust")) return "Rust";
-        if (programmingLanguage.contains("Go")) return "Go";
-        if (programmingLanguage.contains("Pascal")) return "Pascal";
-        return programmingLanguage.length() > 10 ? programmingLanguage.substring(0, 10) + "…" : programmingLanguage;
-    }
 
     public Integer getId() {
         return id;
@@ -58,6 +58,22 @@ public class Submission {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getUserHandle() {
+        return userHandle;
+    }
+
+    public void setUserHandle(String userHandle) {
+        this.userHandle = userHandle;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
     public Integer getContestId() {
@@ -84,20 +100,20 @@ public class Submission {
         this.relativeTimeSeconds = relativeTimeSeconds;
     }
 
-    public Problem getProblem() {
-        return problem;
+    public Integer getProblemId() {
+        return problemId;
     }
 
-    public void setProblem(Problem problem) {
-        this.problem = problem;
+    public void setProblemId(Integer problemId) {
+        this.problemId = problemId;
     }
 
-    public Party getParty() {
-        return party;
+    public Integer getPartyId() {
+        return partyId;
     }
 
-    public void setParty(Party party) {
-        this.party = party;
+    public void setPartyId(Integer partyId) {
+        this.partyId = partyId;
     }
 
     public String getProgrammingLanguage() {
@@ -156,11 +172,50 @@ public class Submission {
         this.points = points;
     }
 
+    public String getSourceCode() {
+        return sourceCode;
+    }
+
+    public void setSourceCode(String sourceCode) {
+        this.sourceCode = sourceCode;
+    }
+
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public LocalDateTime getCrawledAt() {
+        return crawledAt;
+    }
+
+    public void setCrawledAt(LocalDateTime crawledAt) {
+        this.crawledAt = crawledAt;
+    }
+
     public boolean isAnalyzed() {
         return analyzed;
     }
 
     public void setAnalyzed(boolean analyzed) {
         this.analyzed = analyzed;
+    }
+
+    // API getters/setters
+    public String getShortLanguage() {
+        String lang = language != null && !language.isEmpty() ? language : programmingLanguage;
+        if (lang == null) return "?";
+        if (lang.contains("Java")) return "Java";
+        if (lang.contains("Python")) return "Python";
+        if (lang.contains("C++") || lang.contains("G++") || lang.contains("Clang")) return "C++";
+        if (lang.contains("C#")) return "C#";
+        if (lang.contains("Kotlin")) return "Kotlin";
+        if (lang.contains("Rust")) return "Rust";
+        if (lang.contains("Go")) return "Go";
+        if (lang.contains("Pascal")) return "Pascal";
+        return lang.length() > 10 ? lang.substring(0, 10) + "…" : lang;
     }
 }

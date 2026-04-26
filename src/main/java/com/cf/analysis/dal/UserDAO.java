@@ -4,6 +4,7 @@ import com.cf.analysis.db.DatabaseConnection;
 import com.cf.analysis.model.user.User;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,11 +79,11 @@ public class UserDAO {
     }
 
     /** Cập nhật thời gian crawl gần nhất. */
-    public void updateLastCrawl(String handle, Timestamp time) throws SQLException {
+    public void updateLastCrawl(String handle, LocalDateTime time) throws SQLException {
         String sql = "UPDATE users SET last_crawl_at = ? WHERE handle = ?";
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
-            ps.setTimestamp(1, time);
+            ps.setObject(1, time);
             ps.setString(2, handle);
             ps.executeUpdate();
         }
@@ -120,14 +121,18 @@ public class UserDAO {
     private User mapRow(ResultSet rs) throws SQLException {
         User user = new User();
         user.setHandle(rs.getString("handle"));
-        user.setDisplayName(rs.getString("display_name"));
         user.setRating(rs.getInt("rating"));
         user.setMaxRating(rs.getInt("max_rating"));
         user.setRank(rs.getString("rank"));
         user.setCountry(rs.getString("country"));
         user.setAvatarUrl(rs.getString("avatar_url"));
-        user.setAddedDate(rs.getTimestamp("added_date"));
-        user.setLastCrawlAt(rs.getTimestamp("last_crawl_at"));
+
+        Timestamp addedTs = rs.getTimestamp("added_date");
+        if (addedTs != null) user.setAddedDate(addedTs.toLocalDateTime());
+
+        Timestamp crawlTs = rs.getTimestamp("last_crawl_at");
+        if (crawlTs != null) user.setLastCrawlAt(crawlTs.toLocalDateTime());
+
         return user;
     }
 }

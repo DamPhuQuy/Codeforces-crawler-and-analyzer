@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -124,7 +125,9 @@ public class AnalysisDAO {
         a.setDifficultyScore(rs.getInt("difficulty_score"));
         a.setExplanation(rs.getString("explanation"));
         a.setRawJson(rs.getString("raw_json"));
-        a.setAnalyzedAt(rs.getTimestamp("analyzed_at"));
+
+        Timestamp analyzedTs = rs.getTimestamp("analyzed_at");
+        if (analyzedTs != null) a.setAnalyzedAt(analyzedTs.toLocalDateTime());
 
         return a;
     }

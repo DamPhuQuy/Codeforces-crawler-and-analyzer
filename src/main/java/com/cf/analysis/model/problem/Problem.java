@@ -1,6 +1,7 @@
 package com.cf.analysis.model.problem;
 
 public class Problem {
+    private Integer id;
     private Integer contestId = 0;
     private String problemsetName = "";
     private String index = "";
@@ -21,6 +22,14 @@ public class Problem {
         this.points = points;
         this.rating = rating;
         this.tags = tags;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public Integer getContestId() {
@@ -86,6 +95,4 @@ public class Problem {
     public void setTags(String[] tags) {
         this.tags = tags;
     }
-
-
 }

@@ -1,15 +1,10 @@
 package com.cf.analysis.model.user;
 
-/**
- * Model đại diện cho một Codeforces user.
- * Tương ứng với bảng "users" trong PostgreSQL.
- *
- * Đây là một POJO (Plain Old Java Object) - chỉ chứa dữ liệu,
- * không có logic nghiệp vụ nào ở đây.
- */
+import java.time.LocalDateTime;
+
 public class User {
 
-    private String handle = "";
+    private String handle;
     private String email = "";
     private String vkId = "";
     private String openId = "";
@@ -29,8 +24,14 @@ public class User {
     private String avatarUrl = "";
     private String titlePhotoUrl = "";
 
+    private LocalDateTime addedDate;
+    private LocalDateTime lastCrawlAt;
 
     public User() {}
+
+    public User(String handle) {
+        this.handle = handle;
+    }
 
     public User(String handle, String email, String vkId, String openId, String firstName, String lastName,
                 String country, String city, String organization, int contribution, String rank, int rating,
@@ -209,5 +210,32 @@ public class User {
         this.titlePhotoUrl = titlePhotoUrl;
     }
 
+    public LocalDateTime getAddedDate() {
+        return addedDate;
+    }
 
+    public void setAddedDate(LocalDateTime addedDate) {
+        this.addedDate = addedDate;
+    }
+
+    public LocalDateTime getLastCrawlAt() {
+        return lastCrawlAt;
+    }
+
+    public void setLastCrawlAt(LocalDateTime lastCrawlAt) {
+        this.lastCrawlAt = lastCrawlAt;
+    }
+
+    public String getDisplayName() {
+        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
+            return firstName + " " + lastName;
+        }
+        if (firstName != null && !firstName.isEmpty()) {
+            return firstName;
+        }
+        if (lastName != null && !lastName.isEmpty()) {
+            return lastName;
+        }
+        return handle;
+    }
 }

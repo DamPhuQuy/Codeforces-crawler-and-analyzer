@@ -6,26 +6,23 @@ package com.cf.analysis.model.user;
  */
 public class UserScore {
 
-    private String handle = "";           // Handle Codeforces
-    private String displayName = "";      // Tên hiển thị
-    private int    rating = 0;           // Rating CF hiện tại
+    private String handle;
+    private String displayName = "";
+    private int rating = 0;
 
-    // ===== Điểm đánh giá (0 - 100) =====
-    private double dsScore = 0.0;          // Điểm CTDL: dựa trên số loại CTDL unique đã dùng
-    private double algorithmScore = 0.0;   // Điểm thuật toán: số loại + độ phức tạp
-    private double aiScore = 100.0;          // Điểm "sạch" (100 = không dùng AI, 0 = dùng AI toàn bộ)
-    private double overallScore = 0.0;     // Điểm tổng (trung bình có trọng số)
+    private double dsScore = 0.0;
+    private double algorithmScore = 0.0;
+    private double aiScore = 100.0;
+    private double overallScore = 0.0;
 
-    // ===== Thống kê submission =====
-    private int    totalSubmissions = 0;    // Tổng số submission đã crawl
-    private int    analyzedSubmissions = 0; // Số submission đã phân tích AI
-    private int    aiDetectedCount = 0;     // Số submission bị phát hiện dùng AI
-    private double aiUsageRate = 0.0;         // Tỷ lệ dùng AI: 0.0 → 1.0
+    private int totalSubmissions = 0;
+    private int analyzedSubmissions = 0;
+    private int aiDetectedCount = 0;
+    private double aiUsageRate = 0.0;
 
-    // ===== Xếp hạng & phân loại =====
-    private String level = "Beginner";            // Beginner / Intermediate / Advanced / Expert
-    private String topDataStructure = ""; // CTDL xuất hiện nhiều nhất
-    private String topAlgorithm = "";     // Thuật toán xuất hiện nhiều nhất
+    private Level level = Level.BEGINNER;
+    private String topDataStructure = "";
+    private String topAlgorithm = "";
 
     public UserScore() {}
 
@@ -33,75 +30,137 @@ public class UserScore {
         this.handle = handle;
     }
 
-    /**
-     * Xác định level tự động dựa trên overall score và rating CF.
-     * Gọi sau khi đã tính xong các điểm số.
-     */
     public void computeLevel() {
         if (overallScore >= 75 && rating >= 1600) {
-            level = "Expert";
+            this.level = Level.EXPERT;
         } else if (overallScore >= 55 && rating >= 1200) {
-            level = "Advanced";
+            this.level = Level.ADVANCED;
         } else if (overallScore >= 30 && rating >= 800) {
-            level = "Intermediate";
+            this.level = Level.INTERMEDIATE;
         } else {
-            level = "Beginner";
+            this.level = Level.BEGINNER;
         }
     }
 
-    /**
-     * Trả về badge emoji hiển thị cho user.
-     * Ưu tiên badge AI Heavy User nếu tỷ lệ cao.
-     */
     public String getBadge() {
-        if (aiUsageRate >= 0.6)       return "🤖 AI Heavy User";
-        if (algorithmScore >= 80)     return "🧠 Algorithm Master";
-        if (dsScore >= 80)            return "📚 DS Expert";
-        if (aiUsageRate <= 0.05)      return "✅ Clean Coder";
-        return "👨‍💻 Developer";
+        if (aiUsageRate >= 0.6)       return "AI Heavy User";
+        if (algorithmScore >= 80)     return "Algorithm Master";
+        if (dsScore >= 80)            return "Data Structure Expert";
+        if (aiUsageRate <= 0.05)      return "Clean Coder";
+        return "Developer";
     }
 
-    // ==================== Getters & Setters ====================
+    public String getHandle() {
+        return handle;
+    }
 
-    public String getHandle()                    { return handle; }
-    public void   setHandle(String handle)       { this.handle = handle; }
+    public void setHandle(String handle) {
+        this.handle = handle;
+    }
 
-    public String getDisplayName()                       { return displayName; }
-    public void   setDisplayName(String displayName)     { this.displayName = displayName; }
+    public String getDisplayName() {
+        return displayName;
+    }
 
-    public int  getRating()              { return rating; }
-    public void setRating(int rating)    { this.rating = rating; }
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
 
-    public double getDsScore()                   { return dsScore; }
-    public void   setDsScore(double dsScore)     { this.dsScore = dsScore; }
+    public int getRating() {
+        return rating;
+    }
 
-    public double getAlgorithmScore()                        { return algorithmScore; }
-    public void   setAlgorithmScore(double algorithmScore)   { this.algorithmScore = algorithmScore; }
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
 
-    public double getAiScore()                   { return aiScore; }
-    public void   setAiScore(double aiScore)     { this.aiScore = aiScore; }
+    public double getDsScore() {
+        return dsScore;
+    }
 
-    public double getOverallScore()                      { return overallScore; }
-    public void   setOverallScore(double overallScore)   { this.overallScore = overallScore; }
+    public void setDsScore(double dsScore) {
+        this.dsScore = dsScore;
+    }
 
-    public int  getTotalSubmissions()                        { return totalSubmissions; }
-    public void setTotalSubmissions(int totalSubmissions)    { this.totalSubmissions = totalSubmissions; }
+    public double getAlgorithmScore() {
+        return algorithmScore;
+    }
 
-    public int  getAnalyzedSubmissions()                         { return analyzedSubmissions; }
-    public void setAnalyzedSubmissions(int analyzedSubmissions)  { this.analyzedSubmissions = analyzedSubmissions; }
+    public void setAlgorithmScore(double algorithmScore) {
+        this.algorithmScore = algorithmScore;
+    }
 
-    public int  getAiDetectedCount()                         { return aiDetectedCount; }
-    public void setAiDetectedCount(int aiDetectedCount)      { this.aiDetectedCount = aiDetectedCount; }
+    public double getAiScore() {
+        return aiScore;
+    }
 
-    public double getAiUsageRate()                       { return aiUsageRate; }
-    public void   setAiUsageRate(double aiUsageRate)     { this.aiUsageRate = aiUsageRate; }
+    public void setAiScore(double aiScore) {
+        this.aiScore = aiScore;
+    }
 
-    public String getLevel()             { return level; }
-    public void   setLevel(String level) { this.level = level; }
+    public double getOverallScore() {
+        return overallScore;
+    }
 
-    public String getTopDataStructure()                          { return topDataStructure; }
-    public void   setTopDataStructure(String topDataStructure)   { this.topDataStructure = topDataStructure; }
+    public void setOverallScore(double overallScore) {
+        this.overallScore = overallScore;
+    }
 
-    public String getTopAlgorithm()                      { return topAlgorithm; }
-    public void   setTopAlgorithm(String topAlgorithm)   { this.topAlgorithm = topAlgorithm; }
+    public int getTotalSubmissions() {
+        return totalSubmissions;
+    }
+
+    public void setTotalSubmissions(int totalSubmissions) {
+        this.totalSubmissions = totalSubmissions;
+    }
+
+    public int getAnalyzedSubmissions() {
+        return analyzedSubmissions;
+    }
+
+    public void setAnalyzedSubmissions(int analyzedSubmissions) {
+        this.analyzedSubmissions = analyzedSubmissions;
+    }
+
+    public int getAiDetectedCount() {
+        return aiDetectedCount;
+    }
+
+    public void setAiDetectedCount(int aiDetectedCount) {
+        this.aiDetectedCount = aiDetectedCount;
+    }
+
+    public double getAiUsageRate() {
+        return aiUsageRate;
+    }
+
+    public void setAiUsageRate(double aiUsageRate) {
+        this.aiUsageRate = aiUsageRate;
+    }
+
+    public Level getLevel() {
+        return level;
+    }
+
+    public void setLevel(Level level) {
+        this.level = level;
+    }
+
+    public String getTopDataStructure() {
+        return topDataStructure;
+    }
+
+    public void setTopDataStructure(String topDataStructure) {
+        this.topDataStructure = topDataStructure;
+    }
+
+    public String getTopAlgorithm() {
+        return topAlgorithm;
+    }
+
+    public void setTopAlgorithm(String topAlgorithm) {
+        this.topAlgorithm = topAlgorithm;
+    }
+
+
 }

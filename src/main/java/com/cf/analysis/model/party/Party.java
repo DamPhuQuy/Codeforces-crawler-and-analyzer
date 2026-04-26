@@ -3,6 +3,7 @@ package com.cf.analysis.model.party;
 import java.lang.reflect.Member;
 
 public class Party {
+    private Integer id;
     private Integer contestId = 0;
     private Member[] members = new Member[0];
     private ParticipantType participantType = ParticipantType.CONTESTANT;
@@ -23,6 +24,14 @@ public class Party {
         this.ghost = ghost;
         this.room = room;
         this.startTimeSeconds = startTimeSeconds;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public Integer getContestId() {

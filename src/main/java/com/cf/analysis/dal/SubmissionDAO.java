@@ -4,6 +4,7 @@ import com.cf.analysis.db.DatabaseConnection;
 import com.cf.analysis.model.submission.Submission;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +35,11 @@ public class SubmissionDAO {
             ps.setString(4, sub.getProblemIndex());
             ps.setString(5, sub.getProblemName());
             ps.setString(6, sub.getLanguage());
-            ps.setString(7, sub.getVerdict());
+            ps.setString(7, sub.getVerdict() != null ? sub.getVerdict().name() : "");
             ps.setInt(8, sub.getTimeMs());
             ps.setInt(9, sub.getMemoryKb());
             ps.setString(10, sub.getSourceCode());
-            ps.setTimestamp(11, sub.getSubmittedAt());
+            ps.setObject(11, sub.getSubmittedAt());
             ps.executeUpdate();
         }
     }
@@ -152,12 +153,16 @@ public class SubmissionDAO {
         sub.setProblemIndex(rs.getString("problem_index"));
         sub.setProblemName(rs.getString("problem_name"));
         sub.setLanguage(rs.getString("language"));
-        sub.setVerdict(rs.getString("verdict"));
         sub.setTimeMs(rs.getInt("time_ms"));
         sub.setMemoryKb(rs.getInt("memory_kb"));
         sub.setSourceCode(rs.getString("source_code"));
-        sub.setSubmittedAt(rs.getTimestamp("submitted_at"));
-        sub.setCrawledAt(rs.getTimestamp("crawled_at"));
+
+        Timestamp submittedTs = rs.getTimestamp("submitted_at");
+        if (submittedTs != null) sub.setSubmittedAt(submittedTs.toLocalDateTime());
+
+        Timestamp crawledTs = rs.getTimestamp("crawled_at");
+        if (crawledTs != null) sub.setCrawledAt(crawledTs.toLocalDateTime());
+
         return sub;
     }
 }

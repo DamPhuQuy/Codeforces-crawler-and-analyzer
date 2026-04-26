@@ -1,6 +1,6 @@
 package com.cf.analysis.model.analysis;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class Analysis {
 
@@ -13,7 +13,7 @@ public class Analysis {
 
     private AnalysisOutput analysisOutput = new AnalysisOutput();
 
-    private Timestamp analyzedAt = new Timestamp(System.currentTimeMillis());
+    private LocalDateTime analyzedAt = LocalDateTime.now();
 
     public Analysis() {}
 
@@ -64,11 +64,11 @@ public class Analysis {
         this.analysisOutput = analysisOutput;
     }
 
-    public Timestamp getAnalyzedAt() {
+    public LocalDateTime getAnalyzedAt() {
         return analyzedAt;
     }
 
-    public void setAnalyzedAt(Timestamp analyzedAt) {
+    public void setAnalyzedAt(LocalDateTime analyzedAt) {
         this.analyzedAt = analyzedAt;
     }
 }

@@ -6,7 +6,6 @@ import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.user.User;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -133,7 +132,7 @@ public class CrawlService {
             }
 
             // Cập nhật thời gian crawl cuối
-            userDAO.updateLastCrawl(handle, new Timestamp(System.currentTimeMillis()));
+            userDAO.updateLastCrawl(handle, LocalDateTime.now());
             log(logCallback, "  ✅ " + handle + ": +" + newCount + " submissions");
 
         } catch (Exception e) {

@@ -169,7 +169,7 @@ public class EvaluationPanel extends JPanel {
                             String.format("%.0f", s.getAlgorithmScore()),
                             String.format("%.0f", s.getAiScore()),
                             String.format("%.1f", s.getOverallScore()),
-                            s.getLevel(),
+                            s.getLevel().name(),
                             s.getBadge(),
                             String.format("%.0f%%", s.getAiUsageRate() * 100)
                         });
@@ -188,12 +188,12 @@ public class EvaluationPanel extends JPanel {
         radarChart.setScores(score.getDsScore(), score.getAlgorithmScore(), score.getAiScore());
         badgeLabel.setText(score.getBadge());
 
-        levelLabel.setText("🏆 Level: " + score.getLevel());
+        levelLabel.setText("🏆 Level: " + score.getLevel().name());
         levelLabel.setForeground(switch (score.getLevel()) {
-            case "Expert"       -> new Color(255, 80, 80);
-            case "Advanced"     -> new Color(255, 150, 0);
-            case "Intermediate" -> new Color(100, 200, 255);
-            default             -> Color.GRAY;
+            case EXPERT       -> new Color(255, 80, 80);
+            case ADVANCED     -> new Color(255, 150, 0);
+            case INTERMEDIATE -> new Color(100, 200, 255);
+            default           -> Color.GRAY;
         });
 
         statsLabel.setText(String.format("""
@@ -360,9 +360,9 @@ public class EvaluationPanel extends JPanel {
             setHorizontalAlignment(JLabel.CENTER);
             if (!sel && v != null) {
                 switch (v.toString()) {
-                    case "Expert"       -> setForeground(new Color(255, 80,  80));
-                    case "Advanced"     -> setForeground(new Color(255, 150, 0));
-                    case "Intermediate" -> setForeground(new Color(100, 200, 255));
+                    case "EXPERT"       -> setForeground(new Color(255, 80,  80));
+                    case "ADVANCED"     -> setForeground(new Color(255, 150, 0));
+                    case "INTERMEDIATE" -> setForeground(new Color(100, 200, 255));
                     default             -> setForeground(Color.GRAY);
                 }
             }

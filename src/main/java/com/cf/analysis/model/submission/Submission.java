@@ -2,9 +2,6 @@ package com.cf.analysis.model.submission;
 
 import java.time.LocalDateTime;
 
-import com.cf.analysis.model.party.Party;
-import com.cf.analysis.model.problem.Problem;
-
 public class Submission {
 
     private Integer id;
@@ -14,7 +11,6 @@ public class Submission {
     private Integer creationTimeSeconds = 0;
     private Integer relativeTimeSeconds = 0;
     private Integer problemId = 0;
-    private Integer partyId = 0;
     private String programmingLanguage = "";
     private Verdict verdict = Verdict.TESTING;
     private TestSet testSet = TestSet.SAMPLES;
@@ -35,13 +31,12 @@ public class Submission {
         this.id = id;
     }
 
-    public Submission(Integer id, Integer contestId, Integer creationTimeSeconds, Integer relativeTimeSeconds, Problem problem, Party party, String programmingLanguage, Verdict verdict, TestSet testSet, Integer passedTestCount, Integer timeConsumedMillis, Integer memoryConsumedBytes, Float points) {
+    public Submission(Integer id, Integer contestId, Integer creationTimeSeconds, Integer relativeTimeSeconds, Integer problemId, String programmingLanguage, Verdict verdict, TestSet testSet, Integer passedTestCount, Integer timeConsumedMillis, Integer memoryConsumedBytes, Float points) {
         this.id = id != null ? id : null;
         this.contestId = contestId;
         this.creationTimeSeconds = creationTimeSeconds;
         this.relativeTimeSeconds = relativeTimeSeconds;
-        this.problemId = problem != null ? problem.getId() : 0;
-        this.partyId = party != null ? party.getId() : 0;
+        this.problemId = problemId;
         this.programmingLanguage = programmingLanguage;
         this.verdict = verdict;
         this.testSet = testSet;
@@ -102,14 +97,6 @@ public class Submission {
 
     public void setProblemId(Integer problemId) {
         this.problemId = problemId;
-    }
-
-    public Integer getPartyId() {
-        return partyId;
-    }
-
-    public void setPartyId(Integer partyId) {
-        this.partyId = partyId;
     }
 
     public String getProgrammingLanguage() {

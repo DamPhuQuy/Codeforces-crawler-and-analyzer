@@ -1,7 +1,7 @@
 package com.cf.analysis.ui.panels;
 
 import com.cf.analysis.bll.EvaluationService;
-import com.cf.analysis.model.UserScore;
+import com.cf.analysis.model.user.UserScore;
 import com.cf.analysis.ui.MainFrame;
 import net.miginfocom.swing.MigLayout;
 

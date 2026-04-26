@@ -3,9 +3,9 @@ package com.cf.analysis.bll;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
-import com.cf.analysis.model.Analysis;
-import com.cf.analysis.model.User;
-import com.cf.analysis.model.UserScore;
+import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.user.User;
+import com.cf.analysis.model.user.UserScore;
 
 import java.sql.SQLException;
 import java.util.*;

@@ -1,7 +1,8 @@
 package com.cf.analysis.ui.dialogs;
 
-import com.cf.analysis.model.Analysis;
-import com.cf.analysis.model.Submission;
+import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.submission.Submission;
+
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.*;
 import org.fife.ui.rtextarea.*;

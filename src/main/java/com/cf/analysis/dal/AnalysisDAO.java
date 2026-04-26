@@ -1,7 +1,7 @@
 package com.cf.analysis.dal;
 
 import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.model.Analysis;
+import com.cf.analysis.model.analysis.Analysis;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 

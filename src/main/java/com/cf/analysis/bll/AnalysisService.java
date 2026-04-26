@@ -3,8 +3,8 @@ package com.cf.analysis.bll;
 import com.cf.analysis.ai.GeminiAnalyzer;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
-import com.cf.analysis.model.Analysis;
-import com.cf.analysis.model.Submission;
+import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.submission.Submission;
 
 import java.sql.SQLException;
 import java.util.List;

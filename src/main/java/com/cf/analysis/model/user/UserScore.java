@@ -1,4 +1,4 @@
-package com.cf.analysis.model;
+package com.cf.analysis.model.user;
 
 /**
  * Model tổng hợp điểm đánh giá năng lực của một user.
@@ -6,26 +6,26 @@ package com.cf.analysis.model;
  */
 public class UserScore {
 
-    private String handle;           // Handle Codeforces
-    private String displayName;      // Tên hiển thị
-    private int    rating;           // Rating CF hiện tại
+    private String handle = "";           // Handle Codeforces
+    private String displayName = "";      // Tên hiển thị
+    private int    rating = 0;           // Rating CF hiện tại
 
     // ===== Điểm đánh giá (0 - 100) =====
-    private double dsScore;          // Điểm CTDL: dựa trên số loại CTDL unique đã dùng
-    private double algorithmScore;   // Điểm thuật toán: số loại + độ phức tạp
-    private double aiScore;          // Điểm "sạch" (100 = không dùng AI, 0 = dùng AI toàn bộ)
-    private double overallScore;     // Điểm tổng (trung bình có trọng số)
+    private double dsScore = 0.0;          // Điểm CTDL: dựa trên số loại CTDL unique đã dùng
+    private double algorithmScore = 0.0;   // Điểm thuật toán: số loại + độ phức tạp
+    private double aiScore = 100.0;          // Điểm "sạch" (100 = không dùng AI, 0 = dùng AI toàn bộ)
+    private double overallScore = 0.0;     // Điểm tổng (trung bình có trọng số)
 
     // ===== Thống kê submission =====
-    private int    totalSubmissions;    // Tổng số submission đã crawl
-    private int    analyzedSubmissions; // Số submission đã phân tích AI
-    private int    aiDetectedCount;     // Số submission bị phát hiện dùng AI
-    private double aiUsageRate;         // Tỷ lệ dùng AI: 0.0 → 1.0
+    private int    totalSubmissions = 0;    // Tổng số submission đã crawl
+    private int    analyzedSubmissions = 0; // Số submission đã phân tích AI
+    private int    aiDetectedCount = 0;     // Số submission bị phát hiện dùng AI
+    private double aiUsageRate = 0.0;         // Tỷ lệ dùng AI: 0.0 → 1.0
 
     // ===== Xếp hạng & phân loại =====
-    private String level;            // Beginner / Intermediate / Advanced / Expert
-    private String topDataStructure; // CTDL xuất hiện nhiều nhất
-    private String topAlgorithm;     // Thuật toán xuất hiện nhiều nhất
+    private String level = "Beginner";            // Beginner / Intermediate / Advanced / Expert
+    private String topDataStructure = ""; // CTDL xuất hiện nhiều nhất
+    private String topAlgorithm = "";     // Thuật toán xuất hiện nhiều nhất
 
     public UserScore() {}
 

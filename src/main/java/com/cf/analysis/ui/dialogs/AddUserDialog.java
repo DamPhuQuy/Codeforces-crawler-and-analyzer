@@ -1,7 +1,8 @@
 package com.cf.analysis.ui.dialogs;
 
 import com.cf.analysis.bll.UserService;
-import com.cf.analysis.model.User;
+import com.cf.analysis.model.user.User;
+
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;

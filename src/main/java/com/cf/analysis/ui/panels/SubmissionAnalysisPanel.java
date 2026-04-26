@@ -2,9 +2,9 @@ package com.cf.analysis.ui.panels;
 
 import com.cf.analysis.bll.AnalysisService;
 import com.cf.analysis.bll.UserService;
-import com.cf.analysis.model.Analysis;
-import com.cf.analysis.model.Submission;
-import com.cf.analysis.model.User;
+import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.submission.Submission;
+import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
 import com.cf.analysis.ui.dialogs.SubmissionDetailDialog;
 import net.miginfocom.swing.MigLayout;

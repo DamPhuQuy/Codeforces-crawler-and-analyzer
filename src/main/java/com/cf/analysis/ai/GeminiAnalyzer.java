@@ -1,14 +1,24 @@
 package com.cf.analysis.ai;
 
-import com.cf.analysis.model.Analysis;
-import com.cf.analysis.model.Submission;
-import com.google.gson.*;
-import okhttp3.*;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.submission.Submission;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Phân tích source code bằng Google Gemini AI.
@@ -78,56 +88,94 @@ public class GeminiAnalyzer {
         }
 
         return """
-            Bạn là chuyên gia phân tích code competitive programming. Hãy phân tích đoạn code sau.
-            
-            **Thông tin submission:**
+            Bạn là chuyên gia phân tích code competitive programming.
+
+            Mục tiêu:
+            - Phân tích cấu trúc dữ liệu và thuật toán
+            - Đánh giá chất lượng code
+            - Phát hiện các dấu hiệu BẤT THƯỜNG có thể liên quan đến việc sử dụng AI
+
+            QUAN TRỌNG:
+            - KHÔNG được kết luận chắc chắn code có sử dụng AI
+            - Chỉ được đưa ra "mức độ nghi ngờ" (ai_suspicion_score từ 0 → 1)
+            - Mọi nhận định phải có evidence cụ thể
+
+            ---
+
+            Thông tin submission:
             - Ngôn ngữ: %s
             - Bài toán: %s
-            - Kết quả nộp: %s
-            
-            **Source code:**
-            ```
+            - Kết quả: %s
+
+            Source code:
             %s
-            ```
-            
-            **YÊU CẦU:** Trả về JSON thuần (không có text gì khác, không có markdown):
-            
+
+            ---
+
+            Trả về JSON thuần:
+
             {
-              "data_structures": ["Array", "HashMap"],
-              "algorithms": ["BFS", "Dynamic Programming"],
-              "ai_detected": true,
-              "ai_confidence": 0.75,
-              "ai_indicators": {
-                "too_clean": { "detected": true, "evidence": "Không có debug print, formatting hoàn hảo" },
-                "textbook_comments": { "detected": false, "evidence": "" },
-                "perfect_naming": { "detected": true, "evidence": "Biến đặt tên như adjacencyList, shortestDistance" },
-                "ai_pattern": { "detected": false, "evidence": "" },
-                "too_perfect": { "detected": true, "evidence": "Không có biến thừa, không có code comment tạm" },
-                "wrong_style": { "detected": false, "evidence": "" }
-              },
-              "highlighted_lines": [
-                { "line": 5, "reason": "Biến đặt tên quá chuẩn, không giống dân CP", "category": "perfect_naming" }
-              ],
-              "time_complexity": "O(n log n)",
-              "space_complexity": "O(n)",
-              "difficulty_score": 6,
-              "explanation": "Code sử dụng thuật toán BFS với HashMap để lưu khoảng cách..."
+                "data_structures": [],
+                "algorithms": [],
+                "ai_suspicion_score": 0.0,
+                "ai_indicators": {
+                    "too_clean": { "score": 0.0, "evidence": "" },
+                    "textbook_comments": { "score": 0.0, "evidence": "" },
+                    "perfect_naming": { "score": 0.0, "evidence": "" },
+                    "ai_pattern": { "score": 0.0, "evidence": "" },
+                    "too_perfect": { "score": 0.0, "evidence": "" },
+                    "wrong_style": { "score": 0.0, "evidence": "" }
+                },
+                "highlighted_lines": [],
+                "time_complexity": "",
+                "space_complexity": "",
+                "difficulty_score": 1-10,
+                "confidence": 0.0,
+                "explanation": ""
             }
-            
-            **Hướng dẫn đánh giá 6 tiêu chí AI:**
-            1. too_clean: Code quá gọn gàng bất thường - dân CP thường để lại debug print, code thừa
-            2. textbook_comments: Comment giải thích chi tiết từng bước như // Initialize distance array with infinity
-            3. perfect_naming: adjacencyList, shortestDistance thay vì adj, dist - dân CP dùng tên ngắn gọn
-            4. ai_pattern: Cấu trúc code generic, helper functions riêng, Stream API không cần thiết
-            5. too_perfect: Xử lý hết edge cases, không có biến unused, import dọn sạch
-            6. wrong_style: import java.util.HashMap thay vì import java.util.*, class đặt tên cẩn thận thay vì Main
-            
-            **CTDL cần nhận dạng:** Array/ArrayList, LinkedList, Stack, Queue, Deque, PriorityQueue, HashMap, HashSet, TreeMap, TreeSet, Trie, Graph (Adjacency List/Matrix), Binary Tree, Segment Tree, Fenwick Tree/BIT, Union-Find/DSU, Sparse Table
-            
-            **Thuật toán cần nhận dạng:** Sorting, Binary Search, BFS, DFS, Dijkstra, Bellman-Ford, Floyd-Warshall, Dynamic Programming, Greedy, Divide & Conquer, Two Pointers, Sliding Window, KMP, Suffix Array, Backtracking, Topological Sort, SCC, Network Flow, Convex Hull, FFT
-            
-            Trả về JSON thuần, không có ```json hay text nào khác.
-            """.formatted(
+
+            ---
+
+            Hướng dẫn:
+
+            - ai_suspicion_score:
+            = tổng hợp các indicator (không chỉ 1 yếu tố)
+
+            - confidence:
+            = độ chắc chắn của phân tích (không phải AI detection)
+
+            - difficulty_score:
+            dựa vào:
+                + thuật toán
+                + độ dài code
+                + complexity
+
+            ---
+
+            Các dấu hiệu cần chú ý:
+
+            1. too_clean:
+            code cực kỳ sạch, không có dấu vết debug
+
+            2. textbook_comments:
+            comment mang tính giáo trình
+
+            3. perfect_naming:
+            tên biến quá đầy đủ (adjacencyList vs adj)
+
+            4. ai_pattern:
+            structure giống template AI (helper functions, abstraction không cần thiết)
+
+            5. too_perfect:
+            không có lỗi nhỏ, không có code thừa
+
+            6. wrong_style:
+            style không giống CP (Java verbose, class naming chuẩn)
+
+            ---
+
+            Chỉ trả về JSON, không có text ngoài.
+        """.formatted(
                 submission.getLanguage(),
                 submission.getProblemName(),
                 submission.getVerdict(),

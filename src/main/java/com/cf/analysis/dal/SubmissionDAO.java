@@ -1,7 +1,7 @@
 package com.cf.analysis.dal;
 
 import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.model.Submission;
+import com.cf.analysis.model.submission.Submission;
 
 import java.sql.*;
 import java.util.ArrayList;

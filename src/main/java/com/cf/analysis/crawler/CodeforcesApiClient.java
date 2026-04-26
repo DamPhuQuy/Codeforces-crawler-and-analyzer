@@ -1,7 +1,7 @@
 package com.cf.analysis.crawler;
 
-import com.cf.analysis.model.Submission;
-import com.cf.analysis.model.User;
+import com.cf.analysis.model.submission.Submission;
+import com.cf.analysis.model.user.User;
 import com.google.gson.*;
 import okhttp3.*;
 

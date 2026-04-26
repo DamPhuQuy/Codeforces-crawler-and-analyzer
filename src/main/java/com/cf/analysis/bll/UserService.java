@@ -2,7 +2,7 @@ package com.cf.analysis.bll;
 
 import com.cf.analysis.crawler.CodeforcesApiClient;
 import com.cf.analysis.dal.UserDAO;
-import com.cf.analysis.model.User;
+import com.cf.analysis.model.user.User;
 
 import java.io.IOException;
 import java.sql.SQLException;

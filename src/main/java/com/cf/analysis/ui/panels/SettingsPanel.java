@@ -1,13 +1,24 @@
 package com.cf.analysis.ui.panels;
 
+import java.awt.Color;
+import java.awt.Font;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.border.TitledBorder;
+
 import com.cf.analysis.bll.SettingsService;
 import com.cf.analysis.db.DatabaseConnection;
 import com.cf.analysis.ui.MainFrame;
-import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Panel Tab 5: ⚙️ Cài Đặt.
@@ -24,7 +35,7 @@ import java.awt.*;
 public class SettingsPanel extends JPanel {
 
     private final SettingsService    settingsService = new SettingsService();
-    private final DatabaseConnection dbConn          = DatabaseConnection.getInstance();
+    private final DatabaseConnection dbConn          = new DatabaseConnection();
 
     // ====== DB Config Fields ======
     private JTextField    hostField;

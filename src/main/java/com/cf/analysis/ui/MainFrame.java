@@ -1,13 +1,30 @@
 package com.cf.analysis.ui;
 
-import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.ui.panels.*;
-import net.miginfocom.swing.MigLayout;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+
+import com.cf.analysis.db.DatabaseConnection;
+import com.cf.analysis.ui.panels.CrawlMonitorPanel;
+import com.cf.analysis.ui.panels.EvaluationPanel;
+import com.cf.analysis.ui.panels.SettingsPanel;
+import com.cf.analysis.ui.panels.SubmissionAnalysisPanel;
+import com.cf.analysis.ui.panels.UserManagementPanel;
+
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Frame chính của ứng dụng - LAYER 1 (GUI).
@@ -62,7 +79,7 @@ public class MainFrame extends JFrame {
      */
     private void initDatabase() {
         try {
-            DatabaseConnection db = DatabaseConnection.getInstance();
+            DatabaseConnection db = new DatabaseConnection();
             db.connect();
             db.runMigrations(); // Flyway: V1 schema + V2 views + V3 settings + V4 seeds
             System.out.println("✅ Database và migrations sẵn sàng!");

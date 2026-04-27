@@ -77,6 +77,7 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
         return null;
     }
 
+    @Override
     public List<Problem> findAll() throws SQLException {
         String sql = """
             SELECT id, contest_id, problemset_name, index, name, type, points, rating, tags

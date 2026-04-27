@@ -5,23 +5,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection implements Database {
+
     private final String dbUrl = System.getenv("DB_URL");
     private final String dbUsername = System.getenv("DB_USERNAME");
     private final String dbPassword = System.getenv("DB_PASSWORD");
-
-    private DatabaseConnection instance;
 
     @Override
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(dbUrl, dbUsername, dbPassword);
     }
-
-    public synchronized DatabaseConnection getInstance() {
-        if (instance == null) {
-            instance = new DatabaseConnection();
-        }
-        return instance;
-    }
-
-    private DatabaseConnection() {}
 }
+

@@ -21,10 +21,6 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
 
     @Override
     public void insert(UserScore score) throws SQLException {
-        upsert(score);
-    }
-
-    public void upsert(UserScore score) throws SQLException {
         String sql = """
             INSERT INTO user_scores (
                 handle, display_name, rating,

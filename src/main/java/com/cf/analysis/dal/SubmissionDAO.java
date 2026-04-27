@@ -13,10 +13,9 @@ import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.submission.TestSet;
 import com.cf.analysis.model.submission.Verdict;
 
-/**
- * DAL - Xử lý SQL với bảng "submissions".
- */
-public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
+public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
+
+    private static final String ANALYZED_COLUMN = "analyzed";
 
     private final Database db;
 
@@ -80,10 +79,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
         }
     }
 
-    /**
-     * Lấy tất cả submissions của user, mới nhất trước.
-     * JOIN với analyses để biết cái nào đã được phân tích.
-     */
     public List<Submission> findByHandle(String handle) throws SQLException {
         String sql = """
             SELECT s.id, s.user_handle, s.language, s.contest_id,
@@ -92,7 +87,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
                    s.memory_consumed_bytes, s.points, s.source_code,
                    s.submitted_at, s.crawled_at,
-                   (a.id IS NOT NULL OR s.analyzed) AS analyzed
+                   (a.id IS NOT NULL OR s.analyzed) AS " + ANALYZED_COLUMN + "
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             WHERE s.user_handle = ?
@@ -105,23 +100,46 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 Submission sub = mapRow(rs);
-                sub.setAnalyzed(rs.getBoolean("analyzed"));
+                sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
                 list.add(sub);
             }
         }
         return list;
     }
 
-    /**
-     * Tìm submission theo DB id (not CF submission_id).
-     */
     @Override
-    public Submission findById(Long id) throws SQLException {
+    public List<Submission> findAll() throws SQLException {
+        String sql = """
+            SELECT s.id, s.user_handle, s.language, s.contest_id,
+                   s.creation_time_seconds, s.relative_time_seconds,
+                   s.problem_id, s.programming_language, s.verdict,
+                   s.test_set, s.passed_test_count, s.time_consumed_millis,
+                   s.memory_consumed_bytes, s.points, s.source_code,
+                   s.submitted_at, s.crawled_at,
+                   (a.id IS NOT NULL OR s.analyzed) AS " + ANALYZED_COLUMN + "
+            FROM submissions s
+            LEFT JOIN analyses a ON a.submission_id = s.id
+            ORDER BY s.submitted_at DESC
+            """;
+        List<Submission> list = new ArrayList<>();
+        try (Statement stmt = db.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Submission sub = mapRow(rs);
+                sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
+                list.add(sub);
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public Submission findById(Integer id) throws SQLException {
         String sql = """
             SELECT id, user_handle, language, contest_id, creation_time_seconds,
                    relative_time_seconds, problem_id, programming_language, verdict,
                    test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                   points, source_code, submitted_at, crawled_at, analyzed
+                   points, source_code, submitted_at, crawled_at, " + ANALYZED_COLUMN
             FROM submissions
             WHERE id = ?
             """;
@@ -135,7 +153,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
     }
 
     @Override
-    public void delete(Long id) throws SQLException {
+    public void delete(Integer id) throws SQLException {
         String sql = "DELETE FROM submissions WHERE id = ?";
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
@@ -144,9 +162,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
         }
     }
 
-    /**
-     * Lấy id lớn nhất đã có trong DB của user.
-     */
     public long getMaxSubmissionId(String handle) throws SQLException {
         String sql = "SELECT COALESCE(MAX(id), 0) FROM submissions WHERE user_handle = ?";
 
@@ -158,10 +173,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
         return 0L;
     }
 
-    /**
-     * Lấy tất cả submissions chưa được phân tích AI.
-     * Cần có source_code mới phân tích được.
-     */
     public List<Submission> findUnanalyzed() throws SQLException {
         String sql = """
                         SELECT s.id, s.user_handle, s.language, s.contest_id,
@@ -169,7 +180,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
                                      s.problem_id, s.programming_language, s.verdict,
                                      s.test_set, s.passed_test_count, s.time_consumed_millis,
                                      s.memory_consumed_bytes, s.points, s.source_code,
-                                     s.submitted_at, s.crawled_at, s.analyzed
+                                     s.submitted_at, s.crawled_at, s." + ANALYZED_COLUMN
                         FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             WHERE a.id IS NULL
@@ -186,7 +197,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
         return list;
     }
 
-    /** Đếm tổng số submissions của user. */
     public int countByHandle(String handle) throws SQLException {
         String sql = "SELECT COUNT(*) FROM submissions WHERE user_handle = ?";
 
@@ -198,7 +208,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
         return 0;
     }
 
-    /** Cập nhật source code sau khi scrape được. */
     public void updateSourceCode(long id, String sourceCode) throws SQLException {
         String sql = "UPDATE submissions SET source_code = ? WHERE id = ?";
 
@@ -225,7 +234,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
         sub.setMemoryConsumedBytes(rs.getInt("memory_consumed_bytes"));
         sub.setPoints(rs.getFloat("points"));
         sub.setSourceCode(rs.getString("source_code"));
-        sub.setAnalyzed(rs.getBoolean("analyzed"));
+        sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
 
         Timestamp submittedTs = rs.getTimestamp("submitted_at");
         if (submittedTs != null) sub.setSubmittedAt(submittedTs.toLocalDateTime());

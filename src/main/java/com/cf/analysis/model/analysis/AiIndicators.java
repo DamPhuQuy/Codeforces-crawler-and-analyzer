@@ -29,4 +29,52 @@ public class AiIndicators {
         if (wrongStyle != null && wrongStyle.isDetected()) count++;
         return count;
     }
+
+    public Indicator getTooClean() {
+        return tooClean;
+    }
+
+    public void setTooClean(Indicator tooClean) {
+        this.tooClean = tooClean;
+    }
+
+    public Indicator getTextbookComments() {
+        return textbookComments;
+    }
+
+    public void setTextbookComments(Indicator textbookComments) {
+        this.textbookComments = textbookComments;
+    }
+
+    public Indicator getPerfectNaming() {
+        return perfectNaming;
+    }
+
+    public void setPerfectNaming(Indicator perfectNaming) {
+        this.perfectNaming = perfectNaming;
+    }
+
+    public Indicator getAiPattern() {
+        return aiPattern;
+    }
+
+    public void setAiPattern(Indicator aiPattern) {
+        this.aiPattern = aiPattern;
+    }
+
+    public Indicator getTooPerfect() {
+        return tooPerfect;
+    }
+
+    public void setTooPerfect(Indicator tooPerfect) {
+        this.tooPerfect = tooPerfect;
+    }
+
+    public Indicator getWrongStyle() {
+        return wrongStyle;
+    }
+
+    public void setWrongStyle(Indicator wrongStyle) {
+        this.wrongStyle = wrongStyle;
+    }
 }

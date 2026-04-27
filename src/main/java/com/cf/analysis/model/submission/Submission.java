@@ -20,6 +20,7 @@ public class Submission {
     private Float points = 0.0f;
 
     private String sourceCode = "";
+    private String problemName = "";
 
     private LocalDateTime submittedAt;
     private LocalDateTime crawledAt;
@@ -163,6 +164,14 @@ public class Submission {
         this.sourceCode = sourceCode;
     }
 
+    public String getProblemName() {
+        return problemName;
+    }
+
+    public void setProblemName(String problemName) {
+        this.problemName = problemName;
+    }
+
     public LocalDateTime getSubmittedAt() {
         return submittedAt;
     }
@@ -185,6 +194,19 @@ public class Submission {
 
     public void setAnalyzed(boolean analyzed) {
         this.analyzed = analyzed;
+    }
+
+    public long getSubmissionId() {
+        return id != null ? id.longValue() : 0L;
+    }
+
+    public int getTimeMs() {
+        return timeConsumedMillis != null ? timeConsumedMillis : 0;
+    }
+
+    public int getMemoryKb() {
+        int bytes = memoryConsumedBytes != null ? memoryConsumedBytes : 0;
+        return bytes / 1024;
     }
 
     // API getters/setters

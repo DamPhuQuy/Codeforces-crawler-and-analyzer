@@ -1,28 +1,25 @@
 package com.cf.analysis.dal;
 
-import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.model.user.User;
-
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAL (Data Access Layer) - Chỉ xử lý SQL với bảng "users".
- * KHÔNG có bất kỳ logic nghiệp vụ nào ở đây.
- *
- * Mỗi method = một thao tác SQL cụ thể (CRUD).
- */
+import com.cf.analysis.db.Database;
+import com.cf.analysis.model.user.User;
+
 public class UserDAO {
 
-    // Lấy instance DatabaseConnection dùng chung trong toàn app
-    private final DatabaseConnection db = DatabaseConnection.getInstance();
+    private final Database database;
 
-    /**
-     * Thêm user mới vào DB.
-     * Nếu handle đã tồn tại → cập nhật thông tin (upsert).
-     */
+    public UserDAO(Database database) {
+        this.database = database;
+    }
+
     public void insert(User user) throws SQLException {
         String sql = """
             INSERT INTO users (handle, display_name, rating, max_rating, rank, country, avatar_url, added_date)
@@ -36,7 +33,7 @@ public class UserDAO {
                 avatar_url   = EXCLUDED.avatar_url
             """;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
             ps.setString(1, user.getHandle());
             ps.setString(2, user.getDisplayName());
             ps.setInt(3, user.getRating());
@@ -55,7 +52,7 @@ public class UserDAO {
         String sql = "SELECT * FROM users ORDER BY rating DESC";
         List<User> users = new ArrayList<>();
 
-        try (Statement stmt = db.getConnection().createStatement();
+        try (Statement stmt = database.getConnection().createStatement();
              ResultSet rs   = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 users.add(mapRow(rs));
@@ -70,7 +67,7 @@ public class UserDAO {
     public User findByHandle(String handle) throws SQLException {
         String sql = "SELECT * FROM users WHERE handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapRow(rs);
@@ -82,7 +79,7 @@ public class UserDAO {
     public void updateLastCrawl(String handle, LocalDateTime time) throws SQLException {
         String sql = "UPDATE users SET last_crawl_at = ? WHERE handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
             ps.setObject(1, time);
             ps.setString(2, handle);
             ps.executeUpdate();
@@ -93,7 +90,7 @@ public class UserDAO {
     public void updateRating(String handle, int rating, int maxRating, String rank) throws SQLException {
         String sql = "UPDATE users SET rating = ?, max_rating = ?, rank = ? WHERE handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
             ps.setInt(1, rating);
             ps.setInt(2, maxRating);
             ps.setString(3, rank);
@@ -108,7 +105,7 @@ public class UserDAO {
     public void delete(String handle) throws SQLException {
         String sql = "DELETE FROM users WHERE handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
             ps.setString(1, handle);
             ps.executeUpdate();
         }

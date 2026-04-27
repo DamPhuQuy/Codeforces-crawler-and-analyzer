@@ -124,17 +124,16 @@ public class SettingsPanel extends JPanel {
         // ====== Events ======
         testBtn.addActionListener(e -> {
             applyDbConfig();
-            boolean ok = dbConn.testConnection();
-            setStatus(dbStatusLabel, ok ? "✅ Kết nối thành công!" : "❌ Kết nối thất bại!", ok);
+            // boolean ok = dbConn.testConnection();
+            // setStatus(dbStatusLabel, ok ? "✅ Kết nối thành công!" : "❌ Kết nối thất bại!", ok);
         });
 
         saveBtn.addActionListener(e -> {
             applyDbConfig();
             try {
-                dbConn.connect();
-                dbConn.runMigrations(); // Flyway apply V1→V4
-                setStatus(dbStatusLabel, "✅ Đã kết nối và migrate schema thành công! (V"
-                    + dbConn.getMigrationCount() + " migrations)", true);
+                // dbConn.connect();
+                // dbConn.runMigrations(); // Flyway apply V1→V4
+                // setStatus(dbStatusLabel, "✅ Đã kết nối và migrate schema thành công! (V" + dbConn.getMigrationCount() + " migrations)", true);
             } catch (Exception ex) {
                 setStatus(dbStatusLabel, "❌ " + ex.getMessage(), false);
             }
@@ -239,11 +238,11 @@ public class SettingsPanel extends JPanel {
      */
     private void loadCurrentSettings() {
         // DB config (từ file properties)
-        hostField.setText(dbConn.getHost());
-        portField.setText(dbConn.getPort());
-        dbNameField.setText(dbConn.getDatabase());
-        dbUserField.setText(dbConn.getUsername());
-        dbPassField.setText(dbConn.getPassword());
+        // hostField.setText(dbConn.getHost());
+        // portField.setText(dbConn.getPort());
+        // dbNameField.setText(dbConn.getDatabase());
+        // dbUserField.setText(dbConn.getUsername());
+        // dbPassField.setText(dbConn.getPassword());
 
         // Gemini key + crawl settings (từ DB - có thể fail nếu chưa kết nối)
         try {
@@ -260,13 +259,13 @@ public class SettingsPanel extends JPanel {
      * Áp dụng config từ form vào DatabaseConnection (không lưu file ngay).
      */
     private void applyDbConfig() {
-        dbConn.updateConfig(
-            hostField.getText().trim(),
-            portField.getText().trim(),
-            dbNameField.getText().trim(),
-            dbUserField.getText().trim(),
-            new String(dbPassField.getPassword())
-        );
+        // dbConn.updateConfig(
+        //     hostField.getText().trim(),
+        //     portField.getText().trim(),
+        //     dbNameField.getText().trim(),
+        //     dbUserField.getText().trim(),
+        //     new String(dbPassField.getPassword())
+        // );
     }
 
     // ==================== Util ====================

@@ -1,16 +1,19 @@
 package com.cf.analysis.bll;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
 import com.cf.analysis.crawler.CodeforcesApiClient;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.user.User;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
 
 /**
  * BLL - Nghiệp vụ Crawl submission.
@@ -25,10 +28,10 @@ import java.util.function.Consumer;
  */
 public class CrawlService {
 
-    private final UserDAO             userDAO      = new UserDAO();
-    private final SubmissionDAO       submissionDAO = new SubmissionDAO();
-    private final CodeforcesApiClient cfClient     = new CodeforcesApiClient();
-    private final SettingsService     settings     = new SettingsService();
+    private final UserDAO userDAO;
+    private final SubmissionDAO submissionDAO;
+    private final CodeforcesApiClient cfClient;
+    private final SettingsService settings;
 
     // Scheduler cho crawl định kỳ
     private ScheduledExecutorService scheduler;
@@ -38,6 +41,13 @@ public class CrawlService {
     private volatile boolean crawling = false;
 
     private final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, CodeforcesApiClient cfClient, SettingsService settings) {
+        this.userDAO = userDAO;
+        this.submissionDAO = submissionDAO;
+        this.cfClient = cfClient;
+        this.settings = settings;
+    }
 
     // ==================== Crawl All ====================
 

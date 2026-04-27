@@ -2,13 +2,10 @@ package com.cf.analysis;
 
 import java.awt.Color;
 
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import com.cf.analysis.db.Database;
 import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.ui.MainFrame;
 import com.formdev.flatlaf.FlatDarkLaf;
 public class Main {
 
@@ -37,16 +34,16 @@ public class Main {
             System.err.println("Chưa kết nối được DB: " + e.getMessage());
         }
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                MainFrame frame = new MainFrame();
-                frame.setVisible(true);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null,
-                    "Lỗi khởi động ứng dụng:\n" + e.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
-            }
-        });
+        // SwingUtilities.invokeLater(() -> {
+        //     try {
+        //         MainFrame frame = new MainFrame();
+        //         frame.setVisible(true);
+        //     } catch (Exception e) {
+        //         JOptionPane.showMessageDialog(null,
+        //             "Lỗi khởi động ứng dụng:\n" + e.getMessage(),
+        //             "Lỗi", JOptionPane.ERROR_MESSAGE);
+        //         e.printStackTrace();
+        //     }
+        // });
     }
 }

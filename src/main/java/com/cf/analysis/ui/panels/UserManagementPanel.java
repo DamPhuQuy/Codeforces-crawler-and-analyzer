@@ -1,16 +1,32 @@
 package com.cf.analysis.ui.panels;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.text.SimpleDateFormat;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+
 import com.cf.analysis.bll.UserService;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
 import com.cf.analysis.ui.dialogs.AddUserDialog;
-import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
-import java.text.SimpleDateFormat;
-import java.util.List;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Panel Tab 1: 👥 Quản Lý Nick Codeforces.
@@ -31,7 +47,7 @@ public class UserManagementPanel extends JPanel {
 
     // ====== BLL (Business Logic Layer) ======
     // Panel chỉ gọi Service, không gọi DAO trực tiếp
-    private final UserService userService = new UserService();
+    private final UserService userService;
 
     // ====== UI Components ======
     private JTable            userTable;
@@ -51,8 +67,9 @@ public class UserManagementPanel extends JPanel {
 
     // ==================== Constructor ====================
 
-    public UserManagementPanel(MainFrame mainFrame) {
+    public UserManagementPanel(MainFrame mainFrame, UserService userService) {
         this.mainFrame = mainFrame;
+        this.userService = userService;
 
         // Layout toàn bộ panel
         setLayout(new BorderLayout(0, 8));

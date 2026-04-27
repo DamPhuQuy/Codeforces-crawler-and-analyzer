@@ -1,12 +1,12 @@
 package com.cf.analysis.bll;
 
-import com.cf.analysis.crawler.CodeforcesApiClient;
-import com.cf.analysis.dal.UserDAO;
-import com.cf.analysis.model.user.User;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+
+import com.cf.analysis.crawler.CodeforcesApiClient;
+import com.cf.analysis.dal.UserDAO;
+import com.cf.analysis.model.user.User;
 
 /**
  * BLL - Nghiệp vụ quản lý Users.
@@ -14,8 +14,13 @@ import java.util.List;
  */
 public class UserService {
 
-    private final UserDAO              userDAO  = new UserDAO();
-    private final CodeforcesApiClient  cfClient = new CodeforcesApiClient();
+    private final UserDAO userDAO;
+    private final CodeforcesApiClient cfClient;
+
+    public UserService(UserDAO userDAO, CodeforcesApiClient cfClient) {
+        this.userDAO = userDAO;
+        this.cfClient = cfClient;
+    }
 
     /**
      * Thêm Codeforces handle vào hệ thống.
@@ -32,10 +37,11 @@ public class UserService {
         }
 
         // Gọi CF API để lấy thông tin
-        User user = cfClient.getUserInfo(handle.trim());
-        if (user == null) {
+        List<User> users = cfClient.getUserInfo(List.of(handle.trim()));
+        if (users == null || users.isEmpty()) {
             throw new IOException("Không tìm thấy handle '" + handle + "' trên Codeforces!");
         }
+        User user = users.get(0);
 
         // Lưu vào DB
         userDAO.insert(user);
@@ -62,11 +68,13 @@ public class UserService {
      * Dùng khi user muốn refresh thông tin.
      */
     public User refreshUserInfo(String handle) throws Exception {
-        User updated = cfClient.getUserInfo(handle);
-        if (updated != null) {
-            userDAO.updateRating(handle, updated.getRating(), updated.getMaxRating(), updated.getRank());
+        List<User> users = cfClient.getUserInfo(List.of(handle.trim()));
+        if (users != null && !users.isEmpty()) {
+            User updated = users.get(0);
+            userDAO.updateRating(handle, updated.getRating(), updated.getMaxRating(), updated.getRank(), updated.getMaxRank());
+            return updated;
         }
-        return updated;
+        return null;
     }
 
     /**
@@ -75,8 +83,9 @@ public class UserService {
      */
     public boolean validateHandle(String handle) {
         try {
-            return cfClient.getUserInfo(handle.trim()) != null;
-        } catch (Exception e) {
+            List<User> users = cfClient.getUserInfo(List.of(handle.trim()));
+            return users != null && !users.isEmpty();
+        } catch (Exception _) {
             return false;
         }
     }

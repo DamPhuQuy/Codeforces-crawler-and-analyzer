@@ -1,5 +1,38 @@
 package com.cf.analysis.ui.panels;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rtextarea.RTextScrollPane;
+
 import com.cf.analysis.bll.AnalysisService;
 import com.cf.analysis.bll.UserService;
 import com.cf.analysis.model.analysis.Analysis;
@@ -7,16 +40,8 @@ import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
 import com.cf.analysis.ui.dialogs.SubmissionDetailDialog;
-import net.miginfocom.swing.MigLayout;
-import org.fife.ui.rsyntaxtextarea.*;
-import org.fife.ui.rtextarea.*;
 
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Panel Tab 3: 🔍 Phân Tích Submissions.
@@ -32,8 +57,8 @@ import java.util.List;
 public class SubmissionAnalysisPanel extends JPanel {
 
     // ====== Services ======
-    private final UserService     userService     = new UserService();
-    private final AnalysisService analysisService = new AnalysisService();
+    private final UserService userService;
+    private final AnalysisService analysisService;
 
     // ====== UI: Phần trái ======
     private JComboBox<String>  userComboBox;
@@ -68,8 +93,10 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     // ==================== Constructor ====================
 
-    public SubmissionAnalysisPanel(MainFrame mainFrame) {
+    public SubmissionAnalysisPanel(MainFrame mainFrame, UserService userService, AnalysisService analysisService    ) {
         this.mainFrame = mainFrame;
+        this.userService = userService;
+        this.analysisService = analysisService;
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
@@ -400,41 +427,46 @@ public class SubmissionAnalysisPanel extends JPanel {
     private void showAnalysis(Analysis analysis) {
 
         // AI Status
-        boolean ai = analysis.isAiDetected();
-        aiStatusLabel.setText(analysis.getAiLabel());
+        float aiConf = analysis.getAiResult() != null ? analysis.getAiResult().getAiConfidence() : 0.0f;
+        boolean ai = aiConf > 0.5f;
+        String aiLabel = ai ? "🤖 PHÁT HIỆN DÙNG AI" : "✅ KHÔNG PHÁT HIỆN DÙNG AI";
+        aiStatusLabel.setText(aiLabel);
         aiStatusLabel.setForeground(ai ? new Color(255, 80, 80) : new Color(0, 210, 100));
 
         // Confidence
-        int conf = (int)(analysis.getAiConfidence() * 100);
+        int conf = (int)(aiConf * 100);
         aiConfBar.setValue(conf);
         aiConfBar.setString(conf + "%");
         aiConfBar.setForeground(conf >= 70 ? new Color(255,80,80) : conf >= 40 ? new Color(255,180,0) : new Color(0,200,100));
 
         // 6 tiêu chí
         indicatorsPanel.removeAll();
-        if (analysis.getAiIndicators() != null) {
-            Analysis.AiIndicators ind = analysis.getAiIndicators();
-            addIndicator("1. Code quá sạch",          ind.tooClean,          ind.tooCleanEvidence);
-            addIndicator("2. Comment sách giáo khoa", ind.textbookComments,  ind.textbookCommentsEvidence);
-            addIndicator("3. Đặt tên hoàn hảo",       ind.perfectNaming,     ind.perfectNamingEvidence);
-            addIndicator("4. Pattern giống AI",        ind.aiPattern,         ind.aiPatternEvidence);
-            addIndicator("5. Không lỗi vặt",           ind.tooPerfect,        ind.tooPerfectEvidence);
-            addIndicator("6. Style không giống CP",    ind.wrongStyle,        ind.wrongStyleEvidence);
+        if (analysis.getAiResult() != null && analysis.getAiResult().getAiIndicators() != null) {
+            var ind = analysis.getAiResult().getAiIndicators();
+            addIndicator("1. Code quá sạch",          ind.getTooClean().isDetected(),          ind.getTooClean().getEvidence());
+            addIndicator("2. Comment sách giáo khoa", ind.getTextbookComments().isDetected(),  ind.getTextbookComments().getEvidence());
+            addIndicator("3. Đặt tên hoàn hảo",       ind.getPerfectNaming().isDetected(),     ind.getPerfectNaming().getEvidence());
+            addIndicator("4. Pattern giống AI",        ind.getAiPattern().isDetected(),         ind.getAiPattern().getEvidence());
+            addIndicator("5. Không lỗi vặt",           ind.getTooPerfect().isDetected(),        ind.getTooPerfect().getEvidence());
+            addIndicator("6. Style không giống CP",    ind.getWrongStyle().isDetected(),        ind.getWrongStyle().getEvidence());
         }
         indicatorsPanel.revalidate();
         indicatorsPanel.repaint();
 
         // CTDL & Algo
-        List<String> ds    = analysis.getDataStructures();
-        List<String> algos = analysis.getAlgorithms();
+        List<String> ds = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getDataStructures() : null;
+        List<String> algos = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getAlgorithms() : null;
         dsLabel.setText(ds    != null && !ds.isEmpty()    ? "<html>• " + String.join("<br>• ", ds)    + "</html>" : "<html><i>Không phát hiện</i></html>");
         algoLabel.setText(algos != null && !algos.isEmpty() ? "<html>• " + String.join("<br>• ", algos) + "</html>" : "<html><i>Không phát hiện</i></html>");
-        complexityLabel.setText("Time: " + analysis.getTimeComplexity()
-                + " | Space: " + analysis.getSpaceComplexity()
-                + " | Độ khó: " + analysis.getDifficultyScore() + "/10");
+
+        String timeComp = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getTimeComplexity() : "N/A";
+        String spaceComp = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getSpaceComplexity() : "N/A";
+        int difficulty = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getDifficultyScore() : 0;
+        complexityLabel.setText("Time: " + timeComp + " | Space: " + spaceComp + " | Độ khó: " + difficulty + "/10");
 
         // Explanation
-        explanationArea.setText(analysis.getExplanation());
+        String explanation = analysis.getAnalysisOutput() != null ? analysis.getAnalysisOutput().getExplanation() : "";
+        explanationArea.setText(explanation);
         explanationArea.setCaretPosition(0);
 
         // Highlight dòng code
@@ -456,12 +488,7 @@ public class SubmissionAnalysisPanel extends JPanel {
     }
 
     private void applyHighlights(Analysis analysis) {
-        if (analysis.getHighlightedLines() == null) return;
-        for (Analysis.HighlightedLine hl : analysis.getHighlightedLines()) {
-            try {
-                codeArea.addLineHighlight(hl.line - 1, getHighlightColor(hl.category));
-            } catch (Exception ignored) {}
-        }
+        // Highlighted lines feature removed from new Analysis model
     }
 
     private void clearAnalysis() {

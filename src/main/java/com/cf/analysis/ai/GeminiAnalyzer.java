@@ -5,7 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.cf.analysis.model.analysis.AiIndicators;
+import com.cf.analysis.model.analysis.AiResult;
 import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.analysis.AnalysisOutput;
+import com.cf.analysis.model.analysis.ComplexityAnalysis;
+import com.cf.analysis.model.analysis.Indicator;
 import com.cf.analysis.model.submission.Submission;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -276,49 +281,50 @@ public class GeminiAnalyzer {
     private Analysis parseResponse(String rawText, long submissionId) {
         Analysis analysis = new Analysis();
         analysis.setSubmissionId(submissionId);
-        analysis.setRawJson(rawText);
 
         try {
             String cleanJson = extractJson(rawText);
             JsonObject obj   = gson.fromJson(cleanJson, JsonObject.class);
 
-            // CTDL
-            List<String> ds = parseStringList(obj, "data_structures");
-            analysis.setDataStructures(ds);
+            // === ComplexityAnalysis ===
+            ComplexityAnalysis complexity = new ComplexityAnalysis();
+            complexity.setDataStructures(parseStringList(obj, "data_structures"));
+            complexity.setAlgorithms(parseStringList(obj, "algorithms"));
+            complexity.setTimeComplexity(obj.has("time_complexity") ? obj.get("time_complexity").getAsString() : "N/A");
+            complexity.setSpaceComplexity(obj.has("space_complexity") ? obj.get("space_complexity").getAsString() : "N/A");
+            complexity.setDifficultyScore(obj.has("difficulty_score") ? obj.get("difficulty_score").getAsInt() : 0);
+            analysis.setComplexityAnalysis(complexity);
 
-            // Thuật toán
-            List<String> algos = parseStringList(obj, "algorithms");
-            analysis.setAlgorithms(algos);
+            // === AiResult ===
+            AiResult aiResult = new AiResult();
+            float aiConfidence = obj.has("ai_suspicion_score") ? obj.get("ai_suspicion_score").getAsFloat() : 0.0f;
+            aiResult.setAiConfidence(aiConfidence);
 
-            // AI detection
-            analysis.setAiDetected(obj.has("ai_detected") && obj.get("ai_detected").getAsBoolean());
-            analysis.setAiConfidence(obj.has("ai_confidence") ? obj.get("ai_confidence").getAsDouble() : 0.0);
-
-            // 6 tiêu chí
             if (obj.has("ai_indicators") && obj.get("ai_indicators").isJsonObject()) {
-                analysis.setAiIndicators(parseIndicators(obj.getAsJsonObject("ai_indicators")));
+                aiResult.setAiIndicators(parseIndicators(obj.getAsJsonObject("ai_indicators")));
             } else {
-                analysis.setAiIndicators(new Analysis.AiIndicators());
+                aiResult.setAiIndicators(new AiIndicators());
             }
+            analysis.setAiResult(aiResult);
 
-            // Highlighted lines
-            analysis.setHighlightedLines(parseHighlightedLines(obj));
-
-            // Complexity
-            analysis.setTimeComplexity( obj.has("time_complexity")  ? obj.get("time_complexity").getAsString()  : "N/A");
-            analysis.setSpaceComplexity(obj.has("space_complexity") ? obj.get("space_complexity").getAsString() : "N/A");
-            analysis.setDifficultyScore(obj.has("difficulty_score") ? obj.get("difficulty_score").getAsInt()    : 0);
-            analysis.setExplanation(    obj.has("explanation")      ? obj.get("explanation").getAsString()      : "");
+            // === AnalysisOutput ===
+            AnalysisOutput output = new AnalysisOutput();
+            output.setExplanation(obj.has("explanation") ? obj.get("explanation").getAsString() : "");
+            output.setRawJson(rawText);
+            analysis.setAnalysisOutput(output);
 
         } catch (Exception e) {
             // Nếu parse thất bại, set giá trị an toàn và ghi lỗi vào explanation
             System.err.println("⚠️ Lỗi parse Gemini response: " + e.getMessage());
-            analysis.setDataStructures(new ArrayList<>());
-            analysis.setAlgorithms(new ArrayList<>());
-            analysis.setAiIndicators(new Analysis.AiIndicators());
-            analysis.setHighlightedLines(new ArrayList<>());
-            analysis.setExplanation("⚠️ Lỗi phân tích: " + e.getMessage()
+
+            analysis.setComplexityAnalysis(new ComplexityAnalysis());
+            analysis.setAiResult(new AiResult());
+
+            AnalysisOutput output = new AnalysisOutput();
+            output.setExplanation("⚠️ Lỗi phân tích: " + e.getMessage()
                                     + "\n\nRaw response:\n" + rawText.substring(0, Math.min(500, rawText.length())));
+            output.setRawJson(rawText);
+            analysis.setAnalysisOutput(output);
         }
 
         return analysis;
@@ -366,38 +372,46 @@ public class GeminiAnalyzer {
         return list;
     }
 
-    private Analysis.AiIndicators parseIndicators(JsonObject indicators) {
-        Analysis.AiIndicators ai = new Analysis.AiIndicators();
+    private AiIndicators parseIndicators(JsonObject indicators) {
+        AiIndicators ai = new AiIndicators();
 
-        ai.tooClean               = getIndicatorDetected(indicators, "too_clean");
-        ai.tooCleanEvidence       = getIndicatorEvidence(indicators, "too_clean");
-        ai.textbookComments       = getIndicatorDetected(indicators, "textbook_comments");
-        ai.textbookCommentsEvidence = getIndicatorEvidence(indicators, "textbook_comments");
-        ai.perfectNaming          = getIndicatorDetected(indicators, "perfect_naming");
-        ai.perfectNamingEvidence  = getIndicatorEvidence(indicators, "perfect_naming");
-        ai.aiPattern              = getIndicatorDetected(indicators, "ai_pattern");
-        ai.aiPatternEvidence      = getIndicatorEvidence(indicators, "ai_pattern");
-        ai.tooPerfect             = getIndicatorDetected(indicators, "too_perfect");
-        ai.tooPerfectEvidence     = getIndicatorEvidence(indicators, "too_perfect");
-        ai.wrongStyle             = getIndicatorDetected(indicators, "wrong_style");
-        ai.wrongStyleEvidence     = getIndicatorEvidence(indicators, "wrong_style");
+        Indicator tooClean = new Indicator(
+            getIndicatorDetected(indicators, "too_clean"),
+            getIndicatorEvidence(indicators, "too_clean")
+        );
+        ai.setTooClean(tooClean);
+
+        Indicator textbookComments = new Indicator(
+            getIndicatorDetected(indicators, "textbook_comments"),
+            getIndicatorEvidence(indicators, "textbook_comments")
+        );
+        ai.setTextbookComments(textbookComments);
+
+        Indicator perfectNaming = new Indicator(
+            getIndicatorDetected(indicators, "perfect_naming"),
+            getIndicatorEvidence(indicators, "perfect_naming")
+        );
+        ai.setPerfectNaming(perfectNaming);
+
+        Indicator aiPattern = new Indicator(
+            getIndicatorDetected(indicators, "ai_pattern"),
+            getIndicatorEvidence(indicators, "ai_pattern")
+        );
+        ai.setAiPattern(aiPattern);
+
+        Indicator tooPerfect = new Indicator(
+            getIndicatorDetected(indicators, "too_perfect"),
+            getIndicatorEvidence(indicators, "too_perfect")
+        );
+        ai.setTooPerfect(tooPerfect);
+
+        Indicator wrongStyle = new Indicator(
+            getIndicatorDetected(indicators, "wrong_style"),
+            getIndicatorEvidence(indicators, "wrong_style")
+        );
+        ai.setWrongStyle(wrongStyle);
 
         return ai;
-    }
-
-    private List<Analysis.HighlightedLine> parseHighlightedLines(JsonObject obj) {
-        List<Analysis.HighlightedLine> lines = new ArrayList<>();
-        if (!obj.has("highlighted_lines") || !obj.get("highlighted_lines").isJsonArray()) return lines;
-
-        for (JsonElement e : obj.getAsJsonArray("highlighted_lines")) {
-            if (!e.isJsonObject()) continue;
-            JsonObject l  = e.getAsJsonObject();
-            int    line   = l.has("line")     ? l.get("line").getAsInt()        : 0;
-            String reason = l.has("reason")   ? l.get("reason").getAsString()   : "";
-            String cat    = l.has("category") ? l.get("category").getAsString() : "";
-            if (line > 0) lines.add(new Analysis.HighlightedLine(line, reason, cat));
-        }
-        return lines;
     }
 
     private boolean getIndicatorDetected(JsonObject indicators, String key) {

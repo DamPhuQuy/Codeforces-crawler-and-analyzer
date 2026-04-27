@@ -1,15 +1,31 @@
 package com.cf.analysis.ui.panels;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+
 import com.cf.analysis.bll.CrawlService;
 import com.cf.analysis.bll.SettingsService;
 import com.cf.analysis.ui.MainFrame;
-import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import javax.swing.text.*;
-import java.awt.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Panel Tab 2: 🔄 Crawl Monitor.
@@ -29,8 +45,8 @@ import java.time.format.DateTimeFormatter;
 public class CrawlMonitorPanel extends JPanel {
 
     // ====== Services ======
-    private final CrawlService    crawlService   = new CrawlService();
-    private final SettingsService settingsService = new SettingsService();
+    private final CrawlService crawlService;
+    private final SettingsService settingsService;
 
     // ====== UI Components ======
     private JButton     crawlAllBtn;
@@ -48,8 +64,10 @@ public class CrawlMonitorPanel extends JPanel {
 
     // ==================== Constructor ====================
 
-    public CrawlMonitorPanel(MainFrame mainFrame) {
+    public CrawlMonitorPanel(MainFrame mainFrame, CrawlService crawlService, SettingsService settingsService) {
         this.mainFrame = mainFrame;
+        this.crawlService = crawlService;
+        this.settingsService = settingsService;
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 

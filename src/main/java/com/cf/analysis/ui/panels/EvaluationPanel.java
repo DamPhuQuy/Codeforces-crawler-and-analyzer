@@ -1,14 +1,35 @@
 package com.cf.analysis.ui.panels;
 
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+
 import com.cf.analysis.bll.EvaluationService;
 import com.cf.analysis.model.user.UserScore;
 import com.cf.analysis.ui.MainFrame;
-import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
-import java.util.List;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Panel Tab 4: 📊 Đánh Giá Người Dùng.
@@ -20,7 +41,16 @@ import java.util.List;
  */
 public class EvaluationPanel extends JPanel {
 
-    private final EvaluationService evaluationService = new EvaluationService();
+    private final EvaluationService evaluationService;
+
+     public EvaluationPanel(MainFrame mainFrame, EvaluationService evaluationService) {
+        this.evaluationService = evaluationService;
+        this.mainFrame = mainFrame;
+        setLayout(new BorderLayout(0, 8));
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        initComponents();
+        loadData();
+    }
 
     // ====== UI ======
     private JTable            rankTable;
@@ -38,16 +68,6 @@ public class EvaluationPanel extends JPanel {
     };
 
     private final MainFrame mainFrame;
-
-    // ==================== Constructor ====================
-
-    public EvaluationPanel(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
-        setLayout(new BorderLayout(0, 8));
-        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        initComponents();
-        loadData();
-    }
 
     // ==================== Build UI ====================
 

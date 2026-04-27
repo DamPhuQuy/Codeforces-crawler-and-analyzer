@@ -1,33 +1,30 @@
 package com.cf.analysis.bll;
 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 import com.cf.analysis.ai.GeminiAnalyzer;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.submission.Submission;
 
-import java.sql.SQLException;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
-/**
- * BLL - Nghiệp vụ phân tích code bằng Gemini AI.
- *
- * Các phương thức chính:
- * - analyzeSubmission()   : Phân tích một submission cụ thể
- * - analyzeAllPending()   : Phân tích tất cả submission chưa có kết quả
- * - getAnalysis()         : Lấy kết quả đã phân tích
- * - getSubmissionsByHandle(): Lấy submissions của user
- */
 public class AnalysisService {
 
-    private final SubmissionDAO submissionDAO = new SubmissionDAO();
-    private final AnalysisDAO   analysisDAO   = new AnalysisDAO();
-    private final SettingsService settings    = new SettingsService();
+    private final SubmissionDAO submissionDAO;
+    private final AnalysisDAO analysisDAO;
+    private final SettingsService settings;
 
     private GeminiAnalyzer analyzer;  // Lazy initialization
     private volatile boolean analyzing = false;
+
+    public AnalysisService(SubmissionDAO submissionDAO, AnalysisDAO analysisDAO, SettingsService settings) {
+        this.submissionDAO = submissionDAO;
+        this.analysisDAO = analysisDAO;
+        this.settings = settings;
+    }
 
     /**
      * Lấy GeminiAnalyzer với API key mới nhất từ settings.
@@ -52,7 +49,7 @@ public class AnalysisService {
      * @param logCallback     Callback để log tiến trình (có thể null)
      * @return Kết quả Analysis đã lưu vào DB
      */
-    public Analysis analyzeSubmission(long submissionDbId, Consumer<String> logCallback) throws Exception {
+    public Analysis analyzeSubmission(Integer submissionDbId, Consumer<String> logCallback) throws Exception {
         Submission sub = submissionDAO.findById(submissionDbId);
         if (sub == null) {
             throw new IllegalArgumentException("Không tìm thấy submission id=" + submissionDbId);
@@ -62,11 +59,6 @@ public class AnalysisService {
 
         Analysis result = getAnalyzer().analyze(sub);
         analysisDAO.insert(result);
-
-        log(logCallback, "  ✅ AI detected=" + result.isAiDetected()
-                + " (conf=" + String.format("%.0f%%", result.getAiConfidence() * 100) + ")"
-                + " | DS=" + safeSize(result.getDataStructures())
-                + " | Algo=" + safeSize(result.getAlgorithms()));
 
         return result;
     }
@@ -139,7 +131,7 @@ public class AnalysisService {
     /**
      * Lấy kết quả phân tích của một submission (theo DB id của submission).
      */
-    public Analysis getAnalysis(long submissionDbId) throws SQLException {
+    public Analysis getAnalysis(Integer submissionDbId) throws SQLException {
         return analysisDAO.findBySubmissionId(submissionDbId);
     }
 

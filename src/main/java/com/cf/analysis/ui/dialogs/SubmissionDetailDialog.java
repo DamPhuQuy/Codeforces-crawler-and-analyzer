@@ -117,24 +117,9 @@ public class SubmissionDetailDialog extends JDialog {
         codeArea.setText(code != null && !code.isBlank() ? code : "// Không có source code cho submission này.");
         codeArea.setCaretPosition(0);
 
-        // Highlight các dòng nghi ngờ (nếu có analysis)
-        if (analysis != null && analysis.getHighlightedLines() != null) {
-            for (Analysis.HighlightedLine hl : analysis.getHighlightedLines()) {
-                try {
-                    codeArea.addLineHighlight(hl.line - 1, getHighlightColor(hl.category));
-                } catch (Exception ignored) {}
-            }
-        }
-
         RTextScrollPane scroll = new RTextScrollPane(codeArea);
         scroll.setLineNumbersEnabled(true);
         panel.add(scroll, BorderLayout.CENTER);
-
-        // Legend màu highlight
-        if (analysis != null && analysis.getHighlightedLines() != null
-                && !analysis.getHighlightedLines().isEmpty()) {
-            panel.add(buildColorLegend(), BorderLayout.SOUTH);
-        }
 
         return panel;
     }
@@ -182,14 +167,16 @@ public class SubmissionDetailDialog extends JDialog {
         }
 
         // ---- AI Verdict ----
-        String verdictText = analysis.isAiDetected() ? "🤖 PHÁT HIỆN DÙNG AI" : "✅ KHÔNG PHÁT HIỆN DÙNG AI";
+        float aiConf = analysis.getAiResult() != null ? analysis.getAiResult().getAiConfidence() : 0.0f;
+        boolean aiDetected = aiConf > 0.5f;
+        String verdictText = aiDetected ? "🤖 PHÁT HIỆN DÙNG AI" : "✅ KHÔNG PHÁT HIỆN DÙNG AI";
         JLabel verdict = new JLabel(verdictText);
         verdict.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        verdict.setForeground(analysis.isAiDetected() ? new Color(255, 80, 80) : new Color(0, 210, 100));
+        verdict.setForeground(aiDetected ? new Color(255, 80, 80) : new Color(0, 210, 100));
         panel.add(verdict);
 
         // ---- Confidence bar ----
-        int conf = (int)(analysis.getAiConfidence() * 100);
+        int conf = (int)(aiConf * 100);
         JProgressBar confBar = new JProgressBar(0, 100);
         confBar.setValue(conf);
         confBar.setStringPainted(true);
@@ -199,51 +186,44 @@ public class SubmissionDetailDialog extends JDialog {
                             : new Color(0, 200, 100));
         panel.add(confBar, "growx, gapbottom 8");
 
-        // ---- Highlighted lines ----
-        List<Analysis.HighlightedLine> lines = analysis.getHighlightedLines();
-        if (lines != null && !lines.isEmpty()) {
-            panel.add(new JSeparator());
-            panel.add(new JLabel("🎯 Dòng code nghi ngờ:"));
-            for (Analysis.HighlightedLine hl : lines) {
-                JLabel lbl = new JLabel("  • Dòng " + hl.line + ": " + hl.reason);
-                lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                lbl.setForeground(getTextColor(hl.category));
-                panel.add(lbl);
-            }
-        }
-
         // ---- 6 tiêu chí ----
-        if (analysis.getAiIndicators() != null) {
+        if (analysis.getAiResult() != null && analysis.getAiResult().getAiIndicators() != null) {
             panel.add(new JSeparator(), "gaptop 8");
             panel.add(new JLabel("🔍 6 Tiêu Chí Đánh Giá:"));
 
-            Analysis.AiIndicators ind = analysis.getAiIndicators();
-            addIndicatorRow(panel, "1. Code quá sạch",         ind.tooClean,           ind.tooCleanEvidence);
-            addIndicatorRow(panel, "2. Comment sách giáo khoa",ind.textbookComments,   ind.textbookCommentsEvidence);
-            addIndicatorRow(panel, "3. Đặt tên hoàn hảo",     ind.perfectNaming,      ind.perfectNamingEvidence);
-            addIndicatorRow(panel, "4. Pattern giống AI",      ind.aiPattern,          ind.aiPatternEvidence);
-            addIndicatorRow(panel, "5. Không lỗi vặt",         ind.tooPerfect,         ind.tooPerfectEvidence);
-            addIndicatorRow(panel, "6. Style không giống CP",  ind.wrongStyle,         ind.wrongStyleEvidence);
+            var ind = analysis.getAiResult().getAiIndicators();
+            addIndicatorRow(panel, "1. Code quá sạch",         ind.getTooClean().isDetected(),           ind.getTooClean().getEvidence());
+            addIndicatorRow(panel, "2. Comment sách giáo khoa",ind.getTextbookComments().isDetected(),   ind.getTextbookComments().getEvidence());
+            addIndicatorRow(panel, "3. Đặt tên hoàn hảo",     ind.getPerfectNaming().isDetected(),      ind.getPerfectNaming().getEvidence());
+            addIndicatorRow(panel, "4. Pattern giống AI",      ind.getAiPattern().isDetected(),          ind.getAiPattern().getEvidence());
+            addIndicatorRow(panel, "5. Không lỗi vặt",         ind.getTooPerfect().isDetected(),         ind.getTooPerfect().getEvidence());
+            addIndicatorRow(panel, "6. Style không giống CP",  ind.getWrongStyle().isDetected(),         ind.getWrongStyle().getEvidence());
         }
 
         // ---- CTDL & Algo ----
         panel.add(new JSeparator(), "gaptop 8");
 
-        if (analysis.getDataStructures() != null && !analysis.getDataStructures().isEmpty()) {
-            panel.add(new JLabel("📦 CTDL: " + String.join(", ", analysis.getDataStructures())));
+        List<String> ds = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getDataStructures() : null;
+        List<String> algos = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getAlgorithms() : null;
+
+        if (ds != null && !ds.isEmpty()) {
+            panel.add(new JLabel("📦 CTDL: " + String.join(", ", ds)));
         }
-        if (analysis.getAlgorithms() != null && !analysis.getAlgorithms().isEmpty()) {
-            panel.add(new JLabel("⚙️ Thuật toán: " + String.join(", ", analysis.getAlgorithms())));
+        if (algos != null && !algos.isEmpty()) {
+            panel.add(new JLabel("⚙️ Thuật toán: " + String.join(", ", algos)));
         }
-        panel.add(new JLabel("⏱ Time: " + analysis.getTimeComplexity()
-                + " | Space: " + analysis.getSpaceComplexity()
-                + " | Độ khó: " + analysis.getDifficultyScore() + "/10"));
+
+        String timeComp = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getTimeComplexity() : "N/A";
+        String spaceComp = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getSpaceComplexity() : "N/A";
+        int difficulty = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getDifficultyScore() : 0;
+        panel.add(new JLabel("⏱ Time: " + timeComp + " | Space: " + spaceComp + " | Độ khó: " + difficulty + "/10"));
 
         // ---- Explanation ----
         panel.add(new JSeparator(), "gaptop 8");
         panel.add(new JLabel("💬 Nhận Xét:"));
 
-        JTextArea expArea = new JTextArea(analysis.getExplanation());
+        String explanation = analysis.getAnalysisOutput() != null ? analysis.getAnalysisOutput().getExplanation() : "";
+        JTextArea expArea = new JTextArea(explanation);
         expArea.setEditable(false);
         expArea.setLineWrap(true);
         expArea.setWrapStyleWord(true);

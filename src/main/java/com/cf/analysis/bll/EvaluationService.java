@@ -1,5 +1,13 @@
 package com.cf.analysis.bll;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
@@ -8,9 +16,6 @@ import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.user.Level;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.model.user.UserScore;
-
-import java.sql.SQLException;
-import java.util.*;
 
 /**
  * BLL - Tính toán điểm đánh giá tổng hợp năng lực cho từng user.
@@ -24,10 +29,10 @@ import java.util.*;
  */
 public class EvaluationService {
 
-    private final UserDAO       userDAO       = new UserDAO();
-    private final UserScoreDAO  userScoreDAO  = new UserScoreDAO();
-    private final SubmissionDAO submissionDAO = new SubmissionDAO();
-    private final AnalysisDAO   analysisDAO   = new AnalysisDAO();
+    private final UserDAO       userDAO;
+    private final UserScoreDAO  userScoreDAO;
+    private final SubmissionDAO submissionDAO;
+    private final AnalysisDAO   analysisDAO;
 
     // Thuật toán nâng cao (mang lại bonus điểm)
     private static final Set<String> ADVANCED_ALGOS = Set.of(
@@ -41,6 +46,13 @@ public class EvaluationService {
     // Kỳ vọng: user giỏi biết ~15 CTDL và ~20 thuật toán khác nhau
     private static final int MAX_EXPECTED_DS   = 15;
     private static final int MAX_EXPECTED_ALGO = 20;
+
+    public EvaluationService(UserDAO userDAO, UserScoreDAO userScoreDAO, SubmissionDAO submissionDAO, AnalysisDAO analysisDAO) {
+        this.userDAO = userDAO;
+        this.userScoreDAO = userScoreDAO;
+        this.submissionDAO = submissionDAO;
+        this.analysisDAO = analysisDAO;
+    }
 
     // ==================== Evaluate Single User ====================
 
@@ -78,25 +90,33 @@ public class EvaluationService {
             score.setTopDataStructure("N/A");
             score.setTopAlgorithm("N/A");
             score.setLevel(Level.BEGINNER);
-            userScoreDAO.upsert(score);
+            userScoreDAO.insert(score);
             return score;
         }
 
         // ===== AI Usage Rate =====
-        long   aiCount = analyses.stream().filter(Analysis::isAiDetected).count();
-        double aiRate  = (double) aiCount / analyses.size();
+        long aiCount = analyses.stream()
+            .filter(a -> a.getAiResult() != null && a.getAiResult().getAiConfidence() > 0.5f)
+            .count();
+        double aiRate = (double) aiCount / analyses.size();
         score.setAiDetectedCount((int) aiCount);
         score.setAiUsageRate(aiRate);
 
         // AI-Free Score: nhiều AI → điểm thấp
-        double avgConf = analyses.stream().mapToDouble(Analysis::getAiConfidence).average().orElse(0.0);
+        double avgConf = analyses.stream()
+            .filter(a -> a.getAiResult() != null)
+            .mapToDouble(a -> a.getAiResult().getAiConfidence())
+            .average()
+            .orElse(0.0);
         double aiScore = (1.0 - aiRate) * 100.0 * (1.0 - avgConf * 0.15);
         score.setAiScore(clamp(aiScore));
 
         // ===== DS Score =====
         Set<String> uniqueDS = new HashSet<>();
         for (Analysis a : analyses) {
-            if (a.getDataStructures() != null) uniqueDS.addAll(a.getDataStructures());
+            if (a.getComplexityAnalysis() != null && a.getComplexityAnalysis().getDataStructures() != null) {
+                uniqueDS.addAll(a.getComplexityAnalysis().getDataStructures());
+            }
         }
         score.setDsScore(clamp(logScore(uniqueDS.size(), MAX_EXPECTED_DS)));
         score.setTopDataStructure(getMostCommon(analyses, true));
@@ -104,7 +124,9 @@ public class EvaluationService {
         // ===== Algorithm Score + Advanced Bonus =====
         Set<String> uniqueAlgos = new HashSet<>();
         for (Analysis a : analyses) {
-            if (a.getAlgorithms() != null) uniqueAlgos.addAll(a.getAlgorithms());
+            if (a.getComplexityAnalysis() != null && a.getComplexityAnalysis().getAlgorithms() != null) {
+                uniqueAlgos.addAll(a.getComplexityAnalysis().getAlgorithms());
+            }
         }
         double algoBase  = logScore(uniqueAlgos.size(), MAX_EXPECTED_ALGO);
         double advBonus  = calculateAdvancedBonus(analyses);
@@ -120,7 +142,7 @@ public class EvaluationService {
         score.computeLevel();
 
         // Lưu vào database
-        userScoreDAO.upsert(score);
+        userScoreDAO.insert(score);
 
         return score;
     }
@@ -175,8 +197,8 @@ public class EvaluationService {
     private double calculateAdvancedBonus(List<Analysis> analyses) {
         Set<String> foundAdv = new HashSet<>();
         for (Analysis a : analyses) {
-            if (a.getAlgorithms() == null) continue;
-            for (String algo : a.getAlgorithms()) {
+            if (a.getComplexityAnalysis() == null || a.getComplexityAnalysis().getAlgorithms() == null) continue;
+            for (String algo : a.getComplexityAnalysis().getAlgorithms()) {
                 for (String adv : ADVANCED_ALGOS) {
                     if (algo.toLowerCase().contains(adv.toLowerCase())) {
                         foundAdv.add(adv);
@@ -194,7 +216,10 @@ public class EvaluationService {
     private String getMostCommon(List<Analysis> analyses, boolean isDS) {
         Map<String, Integer> freq = new HashMap<>();
         for (Analysis a : analyses) {
-            List<String> items = isDS ? a.getDataStructures() : a.getAlgorithms();
+            if (a.getComplexityAnalysis() == null) continue;
+            List<String> items = isDS
+                ? a.getComplexityAnalysis().getDataStructures()
+                : a.getComplexityAnalysis().getAlgorithms();
             if (items == null) continue;
             for (String item : items) freq.merge(item, 1, Integer::sum);
         }

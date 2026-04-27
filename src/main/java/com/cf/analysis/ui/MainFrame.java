@@ -80,8 +80,8 @@ public class MainFrame extends JFrame {
     private void initDatabase() {
         try {
             DatabaseConnection db = new DatabaseConnection();
-            db.connect();
-            db.runMigrations(); // Flyway: V1 schema + V2 views + V3 settings + V4 seeds
+            // db.connect();
+            // db.runMigrations(); // Flyway: V1 schema + V2 views + V3 settings + V4 seeds
             System.out.println("✅ Database và migrations sẵn sàng!");
         } catch (Exception e) {
             System.err.println("⚠️ Chưa kết nối được DB: " + e.getMessage());
@@ -166,10 +166,10 @@ public class MainFrame extends JFrame {
 
         // Khởi tạo 5 panels
         // Truyền "this" để panels có thể gọi refresh methods
-        userManagementPanel     = new UserManagementPanel(this);
-        crawlMonitorPanel       = new CrawlMonitorPanel(this);
-        submissionAnalysisPanel = new SubmissionAnalysisPanel(this);
-        evaluationPanel         = new EvaluationPanel(this);
+        // userManagementPanel     = new UserManagementPanel(this);
+        // crawlMonitorPanel       = new CrawlMonitorPanel(this);
+        // submissionAnalysisPanel = new SubmissionAnalysisPanel(this);
+        // evaluationPanel         = new EvaluationPanel(this);
         settingsPanel           = new SettingsPanel(this);
 
         // Thêm vào tabs với nhãn có icon emoji

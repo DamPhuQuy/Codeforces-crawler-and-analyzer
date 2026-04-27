@@ -21,10 +21,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
-/**
- * DAL - Xử lý SQL với bảng "analyses".
- * Lưu và đọc JSON strings từ PostgreSQL TEXT columns.
- */
 public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
 
     private static final String JSON_FIELD_DETECTED = "detected";
@@ -38,10 +34,6 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
         this.gson = gson;
     }
 
-    /**
-     * Lưu kết quả phân tích AI.
-     * submission_id có UNIQUE constraint → bỏ qua nếu đã tồn tại.
-     */
     @Override
     public void insert(Analysis a) throws SQLException {
         AiResult aiResult = a.getAiResult() != null ? a.getAiResult() : new AiResult();
@@ -116,9 +108,30 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
         }
     }
 
-    /**
-     * Lấy kết quả phân tích của một submission (theo DB id của submission).
-     */
+    @Override
+    public List<Analysis> findAll() throws SQLException {
+        String sql = """
+            SELECT id, submission_id, ai_confidence,
+                   too_clean, too_clean_evidence,
+                   textbook_comments, textbook_evidence,
+                   perfect_naming, naming_evidence,
+                   ai_pattern, pattern_evidence,
+                   too_perfect, perfect_evidence,
+                   wrong_style, style_evidence,
+                   data_structures, algorithms, time_complexity, space_complexity,
+                   difficulty_score, explanation, raw_json, analyzed_at
+            FROM analyses
+            ORDER BY analyzed_at DESC
+            """;
+
+        List<Analysis> list = new ArrayList<>();
+        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(mapRow(rs));
+        }
+        return list;
+    }
+
     @Override
     public Analysis findById(Long submissionId) throws SQLException {
         return findBySubmissionId(submissionId);

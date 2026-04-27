@@ -21,6 +21,9 @@ import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 /**
  * Client gọi Codeforces API để lấy thông tin user và submission.
@@ -59,7 +62,7 @@ public class CodeforcesApiClient {
         this.gson = new GsonBuilder().create();
     }
 
-    public List<User> getUserInfo(List<String> handles) throws IOException, InterruptedException {
+    public List<User> getUserInfo(List<String> handles) throws IOException {
         if (handles == null || handles.isEmpty()) return Collections.emptyList();
 
         apiRateLimiter.acquire();
@@ -97,7 +100,7 @@ public class CodeforcesApiClient {
     }
 
     public List<Submission> getUserSubmissions(String handle, int maxCount, long minSubId)
-            throws IOException, InterruptedException {
+            throws IOException {
 
         apiRateLimiter.acquire();
 
@@ -175,7 +178,7 @@ public class CodeforcesApiClient {
 
     // scrape html
     public String getSubmissionSourceCode(int contestId, long submissionId)
-            throws IOException, InterruptedException {
+            throws IOException {
 
         scrapeRateLimiter.acquire();
 
@@ -189,47 +192,43 @@ public class CodeforcesApiClient {
             .build();
 
         try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) return null;
+            int code = response.code();
+
+            if (code == 403 || code == 503) {
+                throw new IOException("Cloudflare chặn (Lỗi " + code + ") khi lấy bài nộp: " + submissionId);
+            }
+
+            if (code == 404) {
+                return null;
+            }
+
+            if (!response.isSuccessful() || response.body() == null) {
+                throw new IOException("Lỗi HTTP " + code + " khi truy cập bài nộp: " + submissionId);
+            }
+
             String html = response.body().string();
+
+            if (html.contains("name=\"handleOrEmail\"")) {
+                throw new IOException("Không có quyền xem bài nộp (yêu cầu đăng nhập): " + submissionId);
+            }
+
             return extractSourceFromHtml(html);
         }
     }
 
-    /**
-     * Trích xuất source code từ HTML của trang submission.
-     * Source code nằm trong: <pre id="program-source-text">...</pre>
-     */
     private String extractSourceFromHtml(String html) {
-        // Tìm thẻ pre chứa source code
-        String marker = "id=\"program-source-text\"";
-        int start = html.indexOf(marker);
-        if (start == -1) {
-            // Thử format khác
-            marker = "class=\"program-source\"";
-            start  = html.indexOf(marker);
-            if (start == -1) return null;
+        Document doc = Jsoup.parse(html);
+
+        Element sourceElement = doc.selectFirst("pre#program-source-text");
+        if (sourceElement == null) {
+            sourceElement = doc.selectFirst("pre.program-source");
         }
 
-        // Tìm dấu > để lấy content bên trong
-        int contentStart = html.indexOf('>', start) + 1;
-        if (contentStart <= 0) return null;
+        if (sourceElement == null) {
+            return null;
+        }
 
-        // Tìm thẻ đóng </pre>
-        int contentEnd = html.indexOf("</pre>", contentStart);
-        if (contentEnd == -1) return null;
-
-        String code = html.substring(contentStart, contentEnd);
-
-        // Decode HTML entities
-        code = code.replace("&lt;",   "<")
-                   .replace("&gt;",   ">")
-                   .replace("&amp;",  "&")
-                   .replace("&quot;", "\"")
-                   .replace("&#39;",  "'")
-                   .replace("&#x27;", "'")
-                   .replace("&nbsp;", " ");
-
-        return code.trim();
+        return sourceElement.wholeText().trim();
     }
 
     private JsonObject callApi(String url) throws IOException {
@@ -245,8 +244,6 @@ public class CodeforcesApiClient {
             return gson.fromJson(response.body().string(), JsonObject.class);
         }
     }
-
-    // ==================== JSON Helpers ====================
 
     private String getStringOrNull(JsonObject obj, String key) {
         return (obj.has(key) && !obj.get(key).isJsonNull()) ? obj.get(key).getAsString() : null;

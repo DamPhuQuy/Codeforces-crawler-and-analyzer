@@ -1,45 +1,80 @@
 package com.cf.analysis.dal;
 
-import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.model.submission.Submission;
-
-import java.sql.*;
-import java.time.LocalDateTime;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.cf.analysis.db.Database;
+import com.cf.analysis.model.submission.Submission;
+import com.cf.analysis.model.submission.TestSet;
+import com.cf.analysis.model.submission.Verdict;
 
 /**
  * DAL - Xử lý SQL với bảng "submissions".
  */
 public class SubmissionDAO {
 
-    private final DatabaseConnection db = DatabaseConnection.getInstance();
+    private final Database db;
 
-    /**
-     * Thêm submission mới. Bỏ qua nếu submission_id đã tồn tại.
-     * "ON CONFLICT DO NOTHING" đảm bảo không bao giờ bị trùng.
-     */
+    public SubmissionDAO(Database db) {
+        this.db = db;
+    }
+
     public void insert(Submission sub) throws SQLException {
-        String sql = """
+        String sqlWithId = """
             INSERT INTO submissions
-                (user_handle, submission_id, contest_id, problem_index, problem_name,
-                 language, verdict, time_ms, memory_kb, source_code, submitted_at, crawled_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT (submission_id) DO NOTHING
+                (id, user_handle, language, contest_id, creation_time_seconds,
+                 relative_time_seconds, problem_id, programming_language, verdict,
+                 test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
+                 points, source_code, submitted_at, crawled_at, analyzed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+            ON CONFLICT (id) DO NOTHING
             """;
 
+        String sqlWithoutId = """
+            INSERT INTO submissions
+                (user_handle, language, contest_id, creation_time_seconds,
+                 relative_time_seconds, problem_id, programming_language, verdict,
+                 test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
+                 points, source_code, submitted_at, crawled_at, analyzed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+            ON CONFLICT DO NOTHING
+            """;
+
+        Integer submissionId = sub.getId();
+        String sql = submissionId != null ? sqlWithId : sqlWithoutId;
+
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
-            ps.setString(1, sub.getUserHandle());
-            ps.setLong(2, sub.getSubmissionId());
-            ps.setInt(3, sub.getContestId());
-            ps.setString(4, sub.getProblemIndex());
-            ps.setString(5, sub.getProblemName());
-            ps.setString(6, sub.getLanguage());
-            ps.setString(7, sub.getVerdict() != null ? sub.getVerdict().name() : "");
-            ps.setInt(8, sub.getTimeMs());
-            ps.setInt(9, sub.getMemoryKb());
-            ps.setString(10, sub.getSourceCode());
-            ps.setObject(11, sub.getSubmittedAt());
+            int idx = 1;
+            if (submissionId != null) {
+                ps.setInt(idx++, submissionId);
+            }
+
+            String language = sub.getLanguage() != null ? sub.getLanguage() : "";
+            String programmingLanguage = sub.getProgrammingLanguage() != null
+                    ? sub.getProgrammingLanguage()
+                    : language;
+
+            ps.setString(idx++, sub.getUserHandle());
+            ps.setString(idx++, language);
+            ps.setInt(idx++, safeInt(sub.getContestId()));
+            ps.setInt(idx++, safeInt(sub.getCreationTimeSeconds()));
+            ps.setInt(idx++, safeInt(sub.getRelativeTimeSeconds()));
+            ps.setInt(idx++, safeInt(sub.getProblemId()));
+            ps.setString(idx++, programmingLanguage);
+            ps.setString(idx++, sub.getVerdict() != null ? sub.getVerdict().name() : Verdict.TESTING.name());
+            ps.setString(idx++, sub.getTestSet() != null ? sub.getTestSet().name() : TestSet.SAMPLES.name());
+            ps.setInt(idx++, safeInt(sub.getPassedTestCount()));
+            ps.setInt(idx++, safeInt(sub.getTimeConsumedMillis()));
+            ps.setInt(idx++, safeInt(sub.getMemoryConsumedBytes()));
+            ps.setFloat(idx++, sub.getPoints() != null ? sub.getPoints() : 0.0f);
+            ps.setString(idx++, sub.getSourceCode());
+            ps.setObject(idx++, sub.getSubmittedAt());
+            ps.setBoolean(idx, sub.isAnalyzed());
             ps.executeUpdate();
         }
     }
@@ -50,7 +85,13 @@ public class SubmissionDAO {
      */
     public List<Submission> findByHandle(String handle) throws SQLException {
         String sql = """
-            SELECT s.*, (a.id IS NOT NULL) AS analyzed
+            SELECT s.id, s.user_handle, s.language, s.contest_id,
+                   s.creation_time_seconds, s.relative_time_seconds,
+                   s.problem_id, s.programming_language, s.verdict,
+                   s.test_set, s.passed_test_count, s.time_consumed_millis,
+                   s.memory_consumed_bytes, s.points, s.source_code,
+                   s.submitted_at, s.crawled_at,
+                   (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             WHERE s.user_handle = ?
@@ -74,7 +115,14 @@ public class SubmissionDAO {
      * Tìm submission theo DB id (not CF submission_id).
      */
     public Submission findById(long id) throws SQLException {
-        String sql = "SELECT * FROM submissions WHERE id = ?";
+        String sql = """
+            SELECT id, user_handle, language, contest_id, creation_time_seconds,
+                   relative_time_seconds, problem_id, programming_language, verdict,
+                   test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
+                   points, source_code, submitted_at, crawled_at, analyzed
+            FROM submissions
+            WHERE id = ?
+            """;
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
             ps.setLong(1, id);
@@ -85,11 +133,10 @@ public class SubmissionDAO {
     }
 
     /**
-     * Lấy submission_id lớn nhất đã có trong DB của user.
-     * Dùng để chỉ crawl những submission MỚI HƠN (tránh crawl lại).
+     * Lấy id lớn nhất đã có trong DB của user.
      */
     public long getMaxSubmissionId(String handle) throws SQLException {
-        String sql = "SELECT COALESCE(MAX(submission_id), 0) FROM submissions WHERE user_handle = ?";
+        String sql = "SELECT COALESCE(MAX(id), 0) FROM submissions WHERE user_handle = ?";
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
             ps.setString(1, handle);
@@ -105,7 +152,13 @@ public class SubmissionDAO {
      */
     public List<Submission> findUnanalyzed() throws SQLException {
         String sql = """
-            SELECT s.* FROM submissions s
+                        SELECT s.id, s.user_handle, s.language, s.contest_id,
+                                     s.creation_time_seconds, s.relative_time_seconds,
+                                     s.problem_id, s.programming_language, s.verdict,
+                                     s.test_set, s.passed_test_count, s.time_consumed_millis,
+                                     s.memory_consumed_bytes, s.points, s.source_code,
+                                     s.submitted_at, s.crawled_at, s.analyzed
+                        FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             WHERE a.id IS NULL
               AND s.source_code IS NOT NULL
@@ -145,17 +198,22 @@ public class SubmissionDAO {
     }
 
     private Submission mapRow(ResultSet rs) throws SQLException {
-        Submission sub = new Submission();
-        sub.setId(rs.getLong("id"));
+        Submission sub = new Submission(rs.getInt("id"));
         sub.setUserHandle(rs.getString("user_handle"));
-        sub.setSubmissionId(rs.getLong("submission_id"));
         sub.setContestId(rs.getInt("contest_id"));
-        sub.setProblemIndex(rs.getString("problem_index"));
-        sub.setProblemName(rs.getString("problem_name"));
         sub.setLanguage(rs.getString("language"));
-        sub.setTimeMs(rs.getInt("time_ms"));
-        sub.setMemoryKb(rs.getInt("memory_kb"));
+        sub.setCreationTimeSeconds(rs.getInt("creation_time_seconds"));
+        sub.setRelativeTimeSeconds(rs.getInt("relative_time_seconds"));
+        sub.setProblemId(rs.getInt("problem_id"));
+        sub.setProgrammingLanguage(rs.getString("programming_language"));
+        sub.setVerdict(parseVerdict(rs.getString("verdict")));
+        sub.setTestSet(parseTestSet(rs.getString("test_set")));
+        sub.setPassedTestCount(rs.getInt("passed_test_count"));
+        sub.setTimeConsumedMillis(rs.getInt("time_consumed_millis"));
+        sub.setMemoryConsumedBytes(rs.getInt("memory_consumed_bytes"));
+        sub.setPoints(rs.getFloat("points"));
         sub.setSourceCode(rs.getString("source_code"));
+        sub.setAnalyzed(rs.getBoolean("analyzed"));
 
         Timestamp submittedTs = rs.getTimestamp("submitted_at");
         if (submittedTs != null) sub.setSubmittedAt(submittedTs.toLocalDateTime());
@@ -164,5 +222,27 @@ public class SubmissionDAO {
         if (crawledTs != null) sub.setCrawledAt(crawledTs.toLocalDateTime());
 
         return sub;
+    }
+
+    private int safeInt(Integer value) {
+        return value != null ? value : 0;
+    }
+
+    private Verdict parseVerdict(String raw) {
+        if (raw == null || raw.isBlank()) return Verdict.TESTING;
+        try {
+            return Verdict.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            return Verdict.TESTING;
+        }
+    }
+
+    private TestSet parseTestSet(String raw) {
+        if (raw == null || raw.isBlank()) return TestSet.SAMPLES;
+        try {
+            return TestSet.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            return TestSet.SAMPLES;
+        }
     }
 }

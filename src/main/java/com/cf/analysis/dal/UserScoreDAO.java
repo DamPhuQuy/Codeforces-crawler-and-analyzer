@@ -1,16 +1,23 @@
 package com.cf.analysis.dal;
 
-import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.model.user.Level;
-import com.cf.analysis.model.user.UserScore;
-
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.cf.analysis.db.Database;
+import com.cf.analysis.model.user.Level;
+import com.cf.analysis.model.user.UserScore;
+
 public class UserScoreDAO {
 
-    private final DatabaseConnection db = DatabaseConnection.getInstance();
+    private final Database db;
+
+    public UserScoreDAO(Database db) {
+        this.db = db;
+    }
 
     public void upsert(UserScore score) throws SQLException {
         String sql = """
@@ -58,7 +65,12 @@ public class UserScoreDAO {
     }
 
     public UserScore findByHandle(String handle) throws SQLException {
-        String sql = "SELECT * FROM user_scores WHERE handle = ?";
+        String sql = """
+            SELECT handle, display_name, rating, ds_score, algorithm_score, ai_score, overall_score,
+                   total_submissions, analyzed_submissions, ai_detected_count, ai_usage_rate,
+                   level, top_data_structure, top_algorithm
+            FROM user_scores WHERE handle = ?
+            """;
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
             ps.setString(1, handle);
@@ -69,7 +81,12 @@ public class UserScoreDAO {
     }
 
     public List<UserScore> findAll() throws SQLException {
-        String sql = "SELECT * FROM user_scores ORDER BY overall_score DESC";
+        String sql = """
+            SELECT handle, display_name, rating, ds_score, algorithm_score, ai_score, overall_score,
+                   total_submissions, analyzed_submissions, ai_detected_count, ai_usage_rate,
+                   level, top_data_structure, top_algorithm
+            FROM user_scores ORDER BY overall_score DESC
+            """;
         List<UserScore> scores = new ArrayList<>();
 
         try (Statement stmt = db.getConnection().createStatement();
@@ -91,8 +108,7 @@ public class UserScoreDAO {
     }
 
     private UserScore mapRow(ResultSet rs) throws SQLException {
-        UserScore score = new UserScore();
-        score.setHandle(rs.getString("handle"));
+        UserScore score = new UserScore(rs.getString("handle"));
         score.setDisplayName(rs.getString("display_name"));
         score.setRating(rs.getInt("rating"));
         score.setDsScore(rs.getDouble("ds_score"));

@@ -1,14 +1,26 @@
 package com.cf.analysis.crawler;
 
-import com.cf.analysis.model.submission.Submission;
-import com.cf.analysis.model.user.User;
-import com.google.gson.*;
-import okhttp3.*;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import com.cf.analysis.model.submission.Submission;
+import com.cf.analysis.model.submission.TestSet;
+import com.cf.analysis.model.submission.Verdict;
+import com.cf.analysis.model.user.User;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import io.github.cdimascio.dotenv.Dotenv;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Client gọi Codeforces API để lấy thông tin user và submission.
@@ -22,12 +34,21 @@ import java.util.concurrent.TimeUnit;
  */
 public class CodeforcesApiClient {
 
-    private static final String API_BASE        = "https://codeforces.com/api";
-    private static final long   DELAY_API_MS    = 1200; // Delay giữa các API call
-    private static final long   DELAY_SCRAPE_MS = 2500; // Delay khi scrape HTML (dài hơn)
+    private static final RateLimiter apiRateLimiter = RateLimiter.create(0.8);
+    private static final RateLimiter scrapeRateLimiter = RateLimiter.create(0.4);
+
+    Dotenv dotenv = Dotenv.load();
+
+    private static final String apiBase = "https://codeforces.com/api";
+
+    private static final String userInfoUrl = "/user.info?handles=";
+
+    private static final String userStatusUrl = "/user.status?handle=";
+
+    private static final String sourceCodeUrl = "https://codeforces.com/contest/";
 
     private final OkHttpClient httpClient;
-    private final Gson         gson;
+    private final Gson gson;
 
     public CodeforcesApiClient() {
         this.httpClient = new OkHttpClient.Builder()
@@ -38,18 +59,12 @@ public class CodeforcesApiClient {
         this.gson = new GsonBuilder().create();
     }
 
-    // ==================== User Info ====================
+    public List<User> getUserInfo(List<String> handles) throws IOException, InterruptedException {
+        if (handles == null || handles.isEmpty()) return Collections.emptyList();
 
-    /**
-     * Lấy thông tin user từ Codeforces API.
-     * Endpoint: GET /api/user.info?handles={handle}
-     *
-     * @param handle Codeforces handle cần tìm
-     * @return User với đầy đủ thông tin, null nếu không tồn tại
-     * @throws IOException nếu lỗi mạng hoặc API trả về lỗi
-     */
-    public User getUserInfo(String handle) throws IOException, InterruptedException {
-        String url = API_BASE + "/user.info?handles=" + handle;
+        apiRateLimiter.acquire();
+
+        String url = apiBase + userInfoUrl + String.join(";", handles);
         JsonObject response = callApi(url);
 
         if (!"OK".equals(response.get("status").getAsString())) {
@@ -58,47 +73,35 @@ public class CodeforcesApiClient {
         }
 
         JsonArray results = response.getAsJsonArray("result");
-        if (results == null || results.isEmpty()) return null;
+        if (results == null || results.isEmpty()) return Collections.emptyList();
 
-        JsonObject u = results.get(0).getAsJsonObject();
+        List<User> users = new ArrayList<>();
+        for (JsonElement element : results) {
+            JsonObject u = element.getAsJsonObject();
+            User user = new User(u.get("handle").getAsString());
 
-        User user = new User();
-        user.setHandle(u.get("handle").getAsString());
+            String firstName = getStringOrNull(u, "firstName");
+            String lastName  = getStringOrNull(u, "lastName");
+            user.setFirstName(firstName != null ? firstName : "");
+            user.setLastName(lastName != null ? lastName : "");
 
-        // Tên hiển thị: firstName + lastName nếu có, không thì dùng handle
-        String firstName = getStringOrNull(u, "firstName");
-        String lastName  = getStringOrNull(u, "lastName");
-        if (firstName != null) {
-            user.setDisplayName((firstName + " " + (lastName != null ? lastName : "")).trim());
-        } else {
-            user.setDisplayName(u.get("handle").getAsString());
+            user.setRating(getIntOrDefault(u, "rating", 0));
+            user.setMaxRating(getIntOrDefault(u, "maxRating", 0));
+            user.setRank(getStringOrDefault(u, "rank", "newbie"));
+            user.setCountry(getStringOrDefault(u, "country", ""));
+            user.setAvatarUrl(getStringOrDefault(u, "titlePhoto", ""));
+
+            users.add(user);
         }
-
-        user.setRating(getIntOrDefault(u, "rating", 0));
-        user.setMaxRating(getIntOrDefault(u, "maxRating", 0));
-        user.setRank(getStringOrDefault(u, "rank", "newbie"));
-        user.setCountry(getStringOrDefault(u, "country", ""));
-        user.setAvatarUrl(getStringOrDefault(u, "titlePhoto", ""));
-
-        Thread.sleep(DELAY_API_MS);
-        return user;
+        return users;
     }
 
-    // ==================== Submissions ====================
-
-    /**
-     * Lấy danh sách submissions mới nhất của user (chỉ Accepted).
-     * Endpoint: GET /api/user.status?handle={handle}&from=1&count={count}
-     *
-     * @param handle      Handle của user
-     * @param maxCount    Số lượng submission tối đa cần kiểm tra
-     * @param minSubId    Chỉ lấy submission có ID > giá trị này (để lấy mới)
-     * @return Danh sách submission (chưa có source code - cần scrape riêng)
-     */
     public List<Submission> getUserSubmissions(String handle, int maxCount, long minSubId)
             throws IOException, InterruptedException {
 
-        String url = String.format("%s/user.status?handle=%s&from=1&count=%d", API_BASE, handle, maxCount);
+        apiRateLimiter.acquire();
+
+        String url = apiBase + userStatusUrl + handle + "&from=1&count=" + maxCount;
         JsonObject response = callApi(url);
 
         if (!"OK".equals(response.get("status").getAsString())) {
@@ -110,64 +113,73 @@ public class CodeforcesApiClient {
 
         for (JsonElement element : items) {
             JsonObject s = element.getAsJsonObject();
+            Integer subId = s.get("id").getAsInt();
 
-            long subId = s.get("id").getAsLong();
-            // Dừng khi gặp submission cũ hơn (submissions được trả về mới trước)
-            if (subId <= minSubId) break;
-
-            // Chỉ lấy Accepted
-            String verdict = getStringOrDefault(s, "verdict", "");
-            if (!"OK".equals(verdict)) continue;
-
-            Submission sub = new Submission();
-            sub.setSubmissionId(subId);
-            sub.setUserHandle(handle);
-            sub.setVerdict(verdict);
-
-            if (s.has("contestId") && !s.get("contestId").isJsonNull()) {
-                sub.setContestId(s.get("contestId").getAsInt());
+            if (subId <= minSubId) {
+                break;
             }
 
-            // Thông tin bài toán
-            if (s.has("problem") && !s.get("problem").isJsonNull()) {
-                JsonObject problem = s.getAsJsonObject("problem");
-                sub.setProblemName(getStringOrDefault(problem, "name", ""));
-                sub.setProblemIndex(getStringOrDefault(problem, "index", ""));
+            if (isAcceptedSubmission(s)) {
+                Submission sub = createSubmissionFromJson(handle, subId, s);
+                results.add(sub);
             }
-
-            sub.setLanguage(getStringOrDefault(s, "programmingLanguage", ""));
-            sub.setTimeMs(getIntOrDefault(s, "timeConsumedMillis", 0));
-
-            if (s.has("memoryConsumedBytes") && !s.get("memoryConsumedBytes").isJsonNull()) {
-                sub.setMemoryKb(s.get("memoryConsumedBytes").getAsInt() / 1024);
-            }
-
-            // Thời gian submit (epoch seconds → SQL Timestamp)
-            long epochSeconds = s.get("creationTimeSeconds").getAsLong();
-            sub.setSubmittedAt(new Timestamp(epochSeconds * 1000L));
-
-            results.add(sub);
         }
 
-        Thread.sleep(DELAY_API_MS);
         return results;
     }
 
-    /**
-     * Lấy source code của submission bằng cách scrape HTML từ trang Codeforces.
-     * Codeforces API KHÔNG cung cấp source code trực tiếp.
-     *
-     * URL format: https://codeforces.com/contest/{contestId}/submission/{submissionId}
-     *
-     * @return Source code string, hoặc null nếu không lấy được (code bị ẩn)
-     */
+    private boolean isAcceptedSubmission(JsonObject s) {
+        return s.has("verdict") && "OK".equals(s.get("verdict").getAsString());
+    }
+
+    private Submission createSubmissionFromJson(String handle, Integer subId, JsonObject s) {
+        Submission sub = new Submission(subId);
+        sub.setUserHandle(handle);
+        sub.setVerdict(Verdict.OK);
+
+        if (s.has("contestId") && !s.get("contestId").isJsonNull()) {
+            sub.setContestId(s.get("contestId").getAsInt());
+        }
+
+        sub.setCreationTimeSeconds(getIntOrDefault(s, "creationTimeSeconds", 0));
+        sub.setRelativeTimeSeconds(getIntOrDefault(s, "relativeTimeSeconds", 0));
+
+        String programmingLanguage = getStringOrDefault(s, "programmingLanguage", "");
+        sub.setProgrammingLanguage(programmingLanguage);
+        sub.setLanguage(programmingLanguage);
+
+        sub.setPassedTestCount(getIntOrDefault(s, "passedTestCount", 0));
+        sub.setTimeConsumedMillis(getIntOrDefault(s, "timeConsumedMillis", 0));
+        sub.setMemoryConsumedBytes(getIntOrDefault(s, "memoryConsumedBytes", 0));
+        sub.setPoints(getFloatOrDefault(s, "points", 0.0f));
+        sub.setTestSet(parseTestSet(s));
+
+        return sub;
+    }
+
+    private TestSet parseTestSet(JsonObject s) {
+        if (s.has("testset") && !s.get("testset").isJsonNull()) {
+            String testSetStr = s.get("testset").getAsString().toUpperCase();
+            try {
+                return TestSet.valueOf(testSetStr);
+            } catch (IllegalArgumentException e) {
+                return TestSet.SAMPLES;
+            }
+        }
+        return TestSet.SAMPLES;
+    }
+
+    private float getFloatOrDefault(JsonObject obj, String key, float def) {
+        return (obj.has(key) && !obj.get(key).isJsonNull()) ? obj.get(key).getAsFloat() : def;
+    }
+
+    // scrape html
     public String getSubmissionSourceCode(int contestId, long submissionId)
             throws IOException, InterruptedException {
 
-        String url = String.format(
-            "https://codeforces.com/contest/%d/submission/%d",
-            contestId, submissionId
-        );
+        scrapeRateLimiter.acquire();
+
+        String url = sourceCodeUrl + contestId + "/submission/" + submissionId;
 
         Request request = new Request.Builder()
             .url(url)
@@ -180,8 +192,6 @@ public class CodeforcesApiClient {
             if (!response.isSuccessful() || response.body() == null) return null;
             String html = response.body().string();
             return extractSourceFromHtml(html);
-        } finally {
-            Thread.sleep(DELAY_SCRAPE_MS); // Delay dài hơn khi scrape
         }
     }
 
@@ -222,11 +232,6 @@ public class CodeforcesApiClient {
         return code.trim();
     }
 
-    // ==================== HTTP Helper ====================
-
-    /**
-     * Gọi Codeforces API và parse JSON response.
-     */
     private JsonObject callApi(String url) throws IOException {
         Request request = new Request.Builder()
             .url(url)

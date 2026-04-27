@@ -4,11 +4,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 public class DatabaseConnection implements Database {
 
-    private final String dbUrl = System.getenv("DB_URL");
-    private final String dbUsername = System.getenv("DB_USERNAME");
-    private final String dbPassword = System.getenv("DB_PASSWORD");
+    private final Dotenv dotenv = Dotenv.load();
+    private final String dbUrl = dotenv.get("DB_URL");
+    private final String dbUsername = dotenv.get("DB_USERNAME");
+    private final String dbPassword = dotenv.get("DB_PASSWORD");
 
     @Override
     public Connection getConnection() throws SQLException {

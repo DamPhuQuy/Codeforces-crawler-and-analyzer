@@ -16,7 +16,7 @@ import com.cf.analysis.model.submission.Verdict;
 /**
  * DAL - Xử lý SQL với bảng "submissions".
  */
-public class SubmissionDAO {
+public class SubmissionDAO implements DataAccessInterface<Submission, Long> {
 
     private final Database db;
 
@@ -24,6 +24,7 @@ public class SubmissionDAO {
         this.db = db;
     }
 
+    @Override
     public void insert(Submission sub) throws SQLException {
         String sqlWithId = """
             INSERT INTO submissions
@@ -114,7 +115,8 @@ public class SubmissionDAO {
     /**
      * Tìm submission theo DB id (not CF submission_id).
      */
-    public Submission findById(long id) throws SQLException {
+    @Override
+    public Submission findById(Long id) throws SQLException {
         String sql = """
             SELECT id, user_handle, language, contest_id, creation_time_seconds,
                    relative_time_seconds, problem_id, programming_language, verdict,
@@ -130,6 +132,16 @@ public class SubmissionDAO {
             if (rs.next()) return mapRow(rs);
         }
         return null;
+    }
+
+    @Override
+    public void delete(Long id) throws SQLException {
+        String sql = "DELETE FROM submissions WHERE id = ?";
+
+        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+            ps.setLong(1, id);
+            ps.executeUpdate();
+        }
     }
 
     /**

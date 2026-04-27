@@ -25,7 +25,7 @@ import com.google.gson.reflect.TypeToken;
  * DAL - Xử lý SQL với bảng "analyses".
  * Lưu và đọc JSON strings từ PostgreSQL TEXT columns.
  */
-public class AnalysisDAO {
+public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
 
     private static final String JSON_FIELD_DETECTED = "detected";
     private static final String JSON_FIELD_EVIDENCE = "evidence";
@@ -42,6 +42,7 @@ public class AnalysisDAO {
      * Lưu kết quả phân tích AI.
      * submission_id có UNIQUE constraint → bỏ qua nếu đã tồn tại.
      */
+    @Override
     public void insert(Analysis a) throws SQLException {
         AiResult aiResult = a.getAiResult() != null ? a.getAiResult() : new AiResult();
         AiIndicators indicators = aiResult.getAiIndicators();
@@ -118,6 +119,11 @@ public class AnalysisDAO {
     /**
      * Lấy kết quả phân tích của một submission (theo DB id của submission).
      */
+    @Override
+    public Analysis findById(Long submissionId) throws SQLException {
+        return findBySubmissionId(submissionId);
+    }
+
     public Analysis findBySubmissionId(long submissionId) throws SQLException {
         String sql = """
             SELECT id, submission_id, ai_confidence,
@@ -140,6 +146,16 @@ public class AnalysisDAO {
             if (rs.next()) return mapRow(rs);
         }
         return null;
+    }
+
+    @Override
+    public void delete(Long submissionId) throws SQLException {
+        String sql = "DELETE FROM analyses WHERE submission_id = ?";
+
+        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+            ps.setLong(1, submissionId);
+            ps.executeUpdate();
+        }
     }
 
     /**

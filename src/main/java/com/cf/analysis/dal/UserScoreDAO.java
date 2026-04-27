@@ -11,12 +11,17 @@ import com.cf.analysis.db.Database;
 import com.cf.analysis.model.user.Level;
 import com.cf.analysis.model.user.UserScore;
 
-public class UserScoreDAO {
+public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
 
     private final Database db;
 
     public UserScoreDAO(Database db) {
         this.db = db;
+    }
+
+    @Override
+    public void insert(UserScore score) throws SQLException {
+        upsert(score);
     }
 
     public void upsert(UserScore score) throws SQLException {
@@ -64,6 +69,11 @@ public class UserScoreDAO {
         }
     }
 
+    @Override
+    public UserScore findById(String handle) throws SQLException {
+        return findByHandle(handle);
+    }
+
     public UserScore findByHandle(String handle) throws SQLException {
         String sql = """
             SELECT handle, display_name, rating, ds_score, algorithm_score, ai_score, overall_score,
@@ -98,6 +108,7 @@ public class UserScoreDAO {
         return scores;
     }
 
+    @Override
     public void delete(String handle) throws SQLException {
         String sql = "DELETE FROM user_scores WHERE handle = ?";
 

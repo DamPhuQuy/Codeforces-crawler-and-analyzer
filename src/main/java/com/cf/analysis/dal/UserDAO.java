@@ -12,7 +12,7 @@ import java.util.List;
 import com.cf.analysis.db.Database;
 import com.cf.analysis.model.user.User;
 
-public class UserDAO {
+public class UserDAO implements DataAccessInterface<User, String> {
 
     private final Database database;
 
@@ -20,6 +20,7 @@ public class UserDAO {
         this.database = database;
     }
 
+    @Override
     public void insert(User user) throws SQLException {
         String sql = """
             INSERT INTO users (handle, email, vk_id, open_id, first_name, last_name, country, city,
@@ -96,6 +97,11 @@ public class UserDAO {
     /**
      * Tìm user theo handle. Trả về null nếu không tồn tại.
      */
+    @Override
+    public User findById(String handle) throws SQLException {
+        return findByHandle(handle);
+    }
+
     public User findByHandle(String handle) throws SQLException {
         String sql = """
             SELECT handle, email, vk_id, open_id, first_name, last_name, country, city,
@@ -141,6 +147,7 @@ public class UserDAO {
     /**
      * Xóa user và tất cả submissions/analyses liên quan (CASCADE).
      */
+    @Override
     public void delete(String handle) throws SQLException {
         String sql = "DELETE FROM users WHERE handle = ?";
 

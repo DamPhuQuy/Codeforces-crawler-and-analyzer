@@ -72,9 +72,6 @@ public class UserDAO implements DataAccessInterface<User, String> {
         }
     }
 
-    /**
-     * Lấy tất cả users, sắp xếp theo rating giảm dần.
-     */
     public List<User> findAll() throws SQLException {
         String sql = """
             SELECT handle, email, vk_id, open_id, first_name, last_name, country, city,
@@ -83,20 +80,18 @@ public class UserDAO implements DataAccessInterface<User, String> {
                    avatar_url, title_photo_url, added_date, last_crawl_at
             FROM users ORDER BY rating DESC
             """;
+        // rating desc
         List<User> users = new ArrayList<>();
 
         try (Statement stmt = database.getConnection().createStatement();
-             ResultSet rs   = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                users.add(mapRow(rs));
+                users.add(parseUserFromResultSet(rs));
             }
         }
         return users;
     }
 
-    /**
-     * Tìm user theo handle. Trả về null nếu không tồn tại.
-     */
     @Override
     public User findById(String handle) throws SQLException {
         return findByHandle(handle);
@@ -114,12 +109,11 @@ public class UserDAO implements DataAccessInterface<User, String> {
         try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return mapRow(rs);
+            if (rs.next()) return parseUserFromResultSet(rs);
         }
         return null;
     }
 
-    /** Cập nhật thời gian crawl gần nhất. */
     public void updateLastCrawl(String handle, LocalDateTime time) throws SQLException {
         String sql = "UPDATE users SET last_crawl_at = ? WHERE handle = ?";
 
@@ -130,7 +124,6 @@ public class UserDAO implements DataAccessInterface<User, String> {
         }
     }
 
-    /** Cập nhật rating mới nhất từ Codeforces. */
     public void updateRating(String handle, int rating, int maxRating, String rank, String maxRank) throws SQLException {
         String sql = "UPDATE users SET rating = ?, max_rating = ?, rank = ?, max_rank = ? WHERE handle = ?";
 
@@ -144,9 +137,6 @@ public class UserDAO implements DataAccessInterface<User, String> {
         }
     }
 
-    /**
-     * Xóa user và tất cả submissions/analyses liên quan (CASCADE).
-     */
     @Override
     public void delete(String handle) throws SQLException {
         String sql = "DELETE FROM users WHERE handle = ?";
@@ -157,11 +147,7 @@ public class UserDAO implements DataAccessInterface<User, String> {
         }
     }
 
-    /**
-     * Convert một dòng ResultSet thành User object.
-     * Gọi private để chỉ dùng trong class này.
-     */
-    private User mapRow(ResultSet rs) throws SQLException {
+    private User parseUserFromResultSet(ResultSet rs) throws SQLException {
         User user = new User(rs.getString("handle"));
         user.setEmail(rs.getString("email"));
         user.setVkId(rs.getString("vk_id"));

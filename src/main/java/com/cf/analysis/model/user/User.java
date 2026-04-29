@@ -13,11 +13,11 @@ public class User {
     private String country = "";
     private String city = "";
     private String organization = "";
-    private int contribution = 0;
+    private Integer contribution = 0;
     private String rank = "";
-    private int rating = 0;
+    private Integer rating = 0;
     private String maxRank = "";
-    private int maxRating = 0;
+    private Integer maxRating = 0;
     private int lastOnlineTimeSeconds = 0;
     private int registrationTimeSeconds = 0;
     private int friendOfCount = 0;
@@ -126,11 +126,11 @@ public class User {
         this.organization = organization;
     }
 
-    public int getContribution() {
+    public Integer getContribution() {
         return contribution;
     }
 
-    public void setContribution(int contribution) {
+    public void setContribution(Integer contribution) {
         this.contribution = contribution;
     }
 
@@ -142,11 +142,11 @@ public class User {
         this.rank = rank;
     }
 
-    public int getRating() {
+    public Integer getRating() {
         return rating;
     }
 
-    public void setRating(int rating) {
+    public void setRating(Integer rating) {
         this.rating = rating;
     }
 
@@ -158,11 +158,11 @@ public class User {
         this.maxRank = maxRank;
     }
 
-    public int getMaxRating() {
+    public Integer getMaxRating() {
         return maxRating;
     }
 
-    public void setMaxRating(int maxRating) {
+    public void setMaxRating(Integer maxRating) {
         this.maxRating = maxRating;
     }
 

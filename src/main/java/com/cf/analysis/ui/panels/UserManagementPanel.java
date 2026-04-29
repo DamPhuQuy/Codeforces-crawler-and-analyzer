@@ -46,7 +46,7 @@ public class UserManagementPanel extends JPanel {
         "Handle", "Tên hiển thị", "Rating", "Max Rating", "Rank", "Quốc gia", "Thêm lúc", "Crawl gần nhất"
     };
 
-    private final MainFrame mainFrame;
+    private final MainFrame mainFrame; // refresh main frame
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
     public UserManagementPanel(MainFrame mainFrame, UserService userService) {
@@ -89,7 +89,7 @@ public class UserManagementPanel extends JPanel {
         deleteButton.setForeground(Color.WHITE);
         deleteButton.setFocusPainted(false);
         deleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        deleteButton.setEnabled(false); // Tắt cho đến khi chọn row
+        deleteButton.setEnabled(false); // true when row selected
 
         refreshRatingBtn = new JButton("Cập Nhật Rating");
         refreshRatingBtn.setFont(new Font("Arial", Font.PLAIN, 13));

@@ -79,7 +79,7 @@ public class SettingsPanel extends JPanel {
      * Section 1: PostgreSQL Config.
      */
     private JPanel buildDbSection() {
-        JPanel section = createSection("🗄️ Kết Nối PostgreSQL");
+        JPanel section = createSection("Kết Nối PostgreSQL");
 
         hostField   = new JTextField("localhost");
         portField   = new JTextField("5432");
@@ -104,10 +104,10 @@ public class SettingsPanel extends JPanel {
         section.add(dbPassField, "w 200!, wrap");
 
         // Buttons + status
-        JButton testBtn = new JButton("🔌 Test Kết Nối");
-        JButton saveBtn = new JButton("💾 Lưu & Kết Nối");
+        JButton testBtn = new JButton("Test Kết Nối");
+        JButton saveBtn = new JButton("Lưu & Kết Nối");
         dbStatusLabel   = new JLabel("");
-        dbStatusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        dbStatusLabel.setFont(new Font("Arial", Font.PLAIN, 12));
 
         section.add(new JLabel(""));
         section.add(testBtn, "split 3");
@@ -115,8 +115,8 @@ public class SettingsPanel extends JPanel {
         section.add(dbStatusLabel, "wrap");
 
         // Hint
-        JLabel hint = new JLabel("💡 Cần tạo database trước: CREATE DATABASE codeforces_analysis;");
-        hint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        JLabel hint = new JLabel("Cần tạo database trước: CREATE DATABASE codeforces_analysis;");
+        hint.setFont(new Font("Arial", Font.ITALIC, 11));
         hint.setForeground(Color.GRAY);
         section.add(new JLabel(""));
         section.add(hint, "wrap");
@@ -146,24 +146,24 @@ public class SettingsPanel extends JPanel {
      * Section 2: Gemini API Key.
      */
     private JPanel buildGeminiSection() {
-        JPanel section = createSection("🤖 Google Gemini API Key");
+        JPanel section = createSection("Google Gemini API Key");
 
         apiKeyField = new JPasswordField();
-        apiKeyField.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        apiKeyField.setFont(new Font("Arial", Font.PLAIN, 13));
 
         section.add(new JLabel("API Key:"));
         section.add(apiKeyField, "growx, wrap");
 
-        JLabel hintLabel = new JLabel("💡 Lấy API Key miễn phí: https://aistudio.google.com/app/apikey  (free tier 15 req/min)");
-        hintLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        hintLabel.setForeground(new Color(100, 160, 255));
+        JLabel hintLabel = new JLabel("Lấy API Key miễn phí: https://aistudio.google.com/app/apikey  (free tier 15 req/min)");
+        hintLabel.setFont(new Font("Arial", Font.ITALIC, 11));
+        hintLabel.setForeground(new Color(150, 150, 150));
         section.add(new JLabel(""));
         section.add(hintLabel, "wrap");
 
-        JButton showHideBtn = new JButton("👁 Hiện/Ẩn");
-        JButton saveKeyBtn  = new JButton("💾 Lưu API Key");
+        JButton showHideBtn = new JButton("Hiện/Ẩn");
+        JButton saveKeyBtn  = new JButton("Lưu API Key");
         apiStatusLabel = new JLabel("");
-        apiStatusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        apiStatusLabel.setFont(new Font("Arial", Font.PLAIN, 12));
 
         section.add(new JLabel(""));
         section.add(showHideBtn, "split 3");
@@ -179,14 +179,14 @@ public class SettingsPanel extends JPanel {
         saveKeyBtn.addActionListener(e -> {
             String key = new String(apiKeyField.getPassword()).trim();
             if (key.isEmpty()) {
-                setStatus(apiStatusLabel, "⚠️ Vui lòng nhập API Key!", false);
+                setStatus(apiStatusLabel, "Vui lòng nhập API Key!", false);
                 return;
             }
             try {
                 settingsService.setGeminiApiKey(key);
-                setStatus(apiStatusLabel, "✅ Đã lưu API Key!", true);
+                setStatus(apiStatusLabel, "Đã lưu API Key!", true);
             } catch (Exception ex) {
-                setStatus(apiStatusLabel, "❌ " + ex.getMessage(), false);
+                setStatus(apiStatusLabel, ex.getMessage(), false);
             }
         });
 
@@ -197,7 +197,7 @@ public class SettingsPanel extends JPanel {
      * Section 3: Crawl Settings.
      */
     private JPanel buildCrawlSection() {
-        JPanel section = createSection("⏰ Cài Đặt Crawl Định Kỳ");
+        JPanel section = createSection("Cài Đặt Crawl Định Kỳ");
 
         crawlIntervalSpinner = new JSpinner(new SpinnerNumberModel(24, 1, 168, 1));
         maxSubsSpinner       = new JSpinner(new SpinnerNumberModel(50, 10, 500, 10));
@@ -210,7 +210,7 @@ public class SettingsPanel extends JPanel {
         section.add(maxSubsSpinner, "w 70!, split 2");
         section.add(new JLabel(" submissions (10–500)"), "wrap");
 
-        JButton saveCrawlBtn = new JButton("💾 Lưu Cài Đặt Crawl");
+        JButton saveCrawlBtn = new JButton("Lưu Cài Đặt Crawl");
         section.add(new JLabel(""));
         section.add(saveCrawlBtn, "wrap");
 
@@ -219,11 +219,11 @@ public class SettingsPanel extends JPanel {
                 settingsService.setCrawlIntervalHours((Integer) crawlIntervalSpinner.getValue());
                 settingsService.setMaxSubmissionsPerCrawl((Integer) maxSubsSpinner.getValue());
                 JOptionPane.showMessageDialog(mainFrame,
-                    "✅ Đã lưu cài đặt crawl!",
+                    "Đã lưu cài đặt crawl!",
                     "Thành công", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(mainFrame,
-                    "❌ Lỗi: " + ex.getMessage(),
+                    "Lỗi: " + ex.getMessage(),
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
@@ -280,7 +280,7 @@ public class SettingsPanel extends JPanel {
             BorderFactory.createLineBorder(new Color(70, 70, 85)),
             title,
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 13),
+            new Font("Arial", Font.BOLD, 13),
             new Color(150, 180, 220)
         ));
         return panel;
@@ -288,6 +288,6 @@ public class SettingsPanel extends JPanel {
 
     private void setStatus(JLabel label, String msg, boolean success) {
         label.setText(msg);
-        label.setForeground(success ? new Color(0, 210, 100) : new Color(255, 80, 80));
+        label.setForeground(success ? new Color(180, 180, 180) : new Color(200, 200, 200));
     }
 }

@@ -9,7 +9,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import com.cf.analysis.crawler.CodeforcesApiClient;
+import com.cf.analysis.crawler.CodeforcesApiCaller;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.model.submission.Submission;
@@ -30,7 +30,7 @@ public class CrawlService {
 
     private final UserDAO userDAO;
     private final SubmissionDAO submissionDAO;
-    private final CodeforcesApiClient cfClient;
+    private final CodeforcesApiCaller cfClient;
     private final SettingsService settings;
 
     // Scheduler cho crawl định kỳ
@@ -42,7 +42,7 @@ public class CrawlService {
 
     private final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, CodeforcesApiClient cfClient, SettingsService settings) {
+    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, CodeforcesApiCaller cfClient, SettingsService settings) {
         this.userDAO = userDAO;
         this.submissionDAO = submissionDAO;
         this.cfClient = cfClient;

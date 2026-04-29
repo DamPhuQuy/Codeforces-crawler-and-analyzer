@@ -92,7 +92,7 @@ public class UserManagementPanel extends JPanel {
         add(buildTable(),   BorderLayout.CENTER);
 
         statusLabel = new JLabel("Sẵn sàng");
-        statusLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        statusLabel.setFont(new Font("Arial", Font.ITALIC, 11));
         statusLabel.setForeground(Color.GRAY);
         statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
         add(statusLabel, BorderLayout.SOUTH);
@@ -105,25 +105,25 @@ public class UserManagementPanel extends JPanel {
         JPanel toolbar = new JPanel(new MigLayout("insets 0", "[][]15[]push", ""));
 
         // ---- Nút Thêm Nick ----
-        addButton = new JButton("➕ Thêm Nick");
-        addButton.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        addButton.setBackground(new Color(63, 81, 181));   // Indigo
+        addButton = new JButton("Thêm Nick");
+        addButton.setFont(new Font("Arial", Font.BOLD, 13));
+        addButton.setBackground(new Color(80, 80, 80));
         addButton.setForeground(Color.WHITE);
         addButton.setFocusPainted(false);
         addButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // ---- Nút Xóa Nick ----
-        deleteButton = new JButton("🗑 Xóa Nick");
-        deleteButton.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        deleteButton.setBackground(new Color(183, 28, 28)); // Đỏ đậm
+        deleteButton = new JButton("Xóa Nick");
+        deleteButton.setFont(new Font("Arial", Font.PLAIN, 13));
+        deleteButton.setBackground(new Color(120, 120, 120));
         deleteButton.setForeground(Color.WHITE);
         deleteButton.setFocusPainted(false);
         deleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         deleteButton.setEnabled(false); // Tắt cho đến khi chọn row
 
         // ---- Nút Refresh Rating ----
-        refreshRatingBtn = new JButton("🔃 Cập Nhật Rating");
-        refreshRatingBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        refreshRatingBtn = new JButton("Cập Nhật Rating");
+        refreshRatingBtn.setFont(new Font("Arial", Font.PLAIN, 13));
         refreshRatingBtn.setFocusPainted(false);
         refreshRatingBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         refreshRatingBtn.setEnabled(false);
@@ -140,7 +140,7 @@ public class UserManagementPanel extends JPanel {
             dialog.setVisible(true); // Blocking (modal dialog)
             if (dialog.isSuccess()) {
                 loadData();
-                setStatus("✅ Đã thêm nick mới thành công!");
+                setStatus("Đã thêm nick mới thành công!");
             }
         });
 
@@ -205,7 +205,7 @@ public class UserManagementPanel extends JPanel {
         });
 
         JScrollPane scroll = new JScrollPane(userTable);
-        scroll.setBorder(BorderFactory.createTitledBorder("📋 Danh Sách Accounts Được Theo Dõi"));
+        scroll.setBorder(BorderFactory.createTitledBorder("Danh Sách Accounts Được Theo Dõi"));
         return scroll;
     }
 
@@ -234,7 +234,7 @@ public class UserManagementPanel extends JPanel {
             try {
                 userService.removeUser(handle);
                 loadData();
-                setStatus("✅ Đã xóa nick: " + handle);
+                setStatus("Đã xóa nick: " + handle);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(mainFrame,
                     "Lỗi xóa: " + ex.getMessage(),
@@ -253,7 +253,7 @@ public class UserManagementPanel extends JPanel {
 
         String handle = (String) tableModel.getValueAt(row, 0);
         refreshRatingBtn.setEnabled(false);
-        setStatus("🔄 Đang cập nhật rating của " + handle + "...");
+        setStatus("Đang cập nhật rating của " + handle + "...");
 
         // SwingWorker: doInBackground chạy trên thread riêng, done() chạy trên EDT
         SwingWorker<User, Void> worker = new SwingWorker<>() {
@@ -268,11 +268,11 @@ public class UserManagementPanel extends JPanel {
                     User updated = get();
                     loadData(); // Reload bảng
                     refreshRatingBtn.setEnabled(true);
-                    setStatus("✅ Cập nhật thành công: " + handle
+                    setStatus("Cập nhật thành công: " + handle
                             + " | Rating: " + (updated != null ? updated.getRating() : "?"));
                 } catch (Exception ex) {
                     refreshRatingBtn.setEnabled(true);
-                    setStatus("❌ Lỗi: " + ex.getMessage());
+                    setStatus("Lỗi: " + ex.getMessage());
                 }
             }
         };
@@ -317,7 +317,7 @@ public class UserManagementPanel extends JPanel {
                     setStatus("Đã tải " + users.size() + " nick.");
 
                 } catch (Exception ex) {
-                    setStatus("❌ Lỗi tải dữ liệu: " + ex.getMessage());
+                    setStatus("Lỗi tải dữ liệu: " + ex.getMessage());
                 }
             }
         };

@@ -129,18 +129,18 @@ public class SubmissionAnalysisPanel extends JPanel {
         userComboBox.setPreferredSize(new Dimension(150, 28));
         bar.add(userComboBox);
 
-        JButton loadBtn = new JButton("📂 Tải");
+        JButton loadBtn = new JButton("Tải");
         loadBtn.setFocusPainted(false);
         bar.add(loadBtn);
 
-        analyzeSelectedBtn = new JButton("🤖 Phân Tích Đã Chọn");
-        analyzeSelectedBtn.setBackground(new Color(103, 58, 183));
+        analyzeSelectedBtn = new JButton("Phân Tích Đã Chọn");
+        analyzeSelectedBtn.setBackground(new Color(80, 80, 80));
         analyzeSelectedBtn.setForeground(Color.WHITE);
         analyzeSelectedBtn.setFocusPainted(false);
         analyzeSelectedBtn.setEnabled(false);
         bar.add(analyzeSelectedBtn);
 
-        analyzeAllBtn = new JButton("🤖 Phân Tích Tất Cả Pending");
+        analyzeAllBtn = new JButton("Phân Tích Tất Cả Pending");
         analyzeAllBtn.setFocusPainted(false);
         bar.add(analyzeAllBtn);
 
@@ -227,14 +227,14 @@ public class SubmissionAnalysisPanel extends JPanel {
     /** Code viewer với RSyntaxTextArea. */
     private JPanel buildCodePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("📝 Source Code (click dòng vàng/đỏ để xem lý do)"));
+        panel.setBorder(BorderFactory.createTitledBorder("Source Code"));
 
         codeArea = new RSyntaxTextArea(30, 80);
         codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
         codeArea.setEditable(false);
         codeArea.setCodeFoldingEnabled(true);
         codeArea.setAntiAliasingEnabled(true);
-        codeArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 13));
+        codeArea.setFont(new Font("Arial", Font.PLAIN, 13));
 
         // Áp monokai theme
         try {
@@ -274,7 +274,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         box.setPreferredSize(new Dimension(12, 12));
         p.add(box);
         JLabel lbl = new JLabel(text);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lbl.setFont(new Font("Arial", Font.PLAIN, 10));
         lbl.setForeground(new Color(180, 180, 180));
         p.add(lbl);
     }
@@ -285,7 +285,7 @@ public class SubmissionAnalysisPanel extends JPanel {
 
         // AI verdict
         aiStatusLabel = new JLabel("Chưa có phân tích AI");
-        aiStatusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        aiStatusLabel.setFont(new Font("Arial", Font.BOLD, 14));
         aiStatusLabel.setForeground(Color.GRAY);
         panel.add(aiStatusLabel);
 
@@ -297,7 +297,7 @@ public class SubmissionAnalysisPanel extends JPanel {
 
         // 6 Tiêu chí
         panel.add(new JSeparator(), "gaptop 8");
-        panel.add(new JLabel("🔍 6 Tiêu Chí Phát Hiện AI:"), "gaptop 4");
+        panel.add(new JLabel("6 Tiêu Chí Phát Hiện AI:"), "gaptop 4");
 
         indicatorsPanel = new JPanel(new MigLayout("insets 5, wrap 1", "[grow, fill]", "[]2[]"));
         indicatorsPanel.setBorder(BorderFactory.createLineBorder(new Color(55, 55, 65)));
@@ -305,31 +305,31 @@ public class SubmissionAnalysisPanel extends JPanel {
 
         // CTDL
         panel.add(new JSeparator(), "gaptop 8");
-        panel.add(new JLabel("📦 Cấu Trúc Dữ Liệu:"), "gaptop 4");
+        panel.add(new JLabel("Cấu Trúc Dữ Liệu:"), "gaptop 4");
         dsLabel = new JLabel("<html><i>Chưa phân tích</i></html>");
-        dsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        dsLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         panel.add(dsLabel);
 
         // Thuật toán
-        panel.add(new JLabel("⚙️ Thuật Toán:"));
+        panel.add(new JLabel("Thuật Toán:"));
         algoLabel = new JLabel("<html><i>Chưa phân tích</i></html>");
-        algoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        algoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         panel.add(algoLabel);
 
         // Complexity
-        panel.add(new JLabel("⏱ Độ Phức Tạp:"));
+        panel.add(new JLabel("Độ Phức Tạp:"));
         complexityLabel = new JLabel("N/A");
-        complexityLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        complexityLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         panel.add(complexityLabel);
 
         // Nhận xét
         panel.add(new JSeparator(), "gaptop 8");
-        panel.add(new JLabel("💬 Nhận Xét:"), "gaptop 4");
+        panel.add(new JLabel("Nhận Xét:"), "gaptop 4");
         explanationArea = new JTextArea();
         explanationArea.setEditable(false);
         explanationArea.setLineWrap(true);
         explanationArea.setWrapStyleWord(true);
-        explanationArea.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        explanationArea.setFont(new Font("Arial", Font.PLAIN, 12));
         explanationArea.setBackground(new Color(35, 35, 45));
         JScrollPane explanScroll = new JScrollPane(explanationArea);
         explanScroll.setPreferredSize(new Dimension(0, 130));
@@ -380,7 +380,7 @@ public class SubmissionAnalysisPanel extends JPanel {
                             s.getShortLanguage(),
                             "OK".equals(s.getVerdict()) ? "AC" : s.getVerdict(),
                             s.getSubmittedAt() != null ? sdf.format(s.getSubmittedAt()) : "",
-                            s.isAnalyzed() ? "✅" : "—"
+                            s.isAnalyzed() ? "[x]" : "[ ]"
                         });
                     }
                 } catch (Exception ex) {
@@ -429,15 +429,15 @@ public class SubmissionAnalysisPanel extends JPanel {
         // AI Status
         float aiConf = analysis.getAiResult() != null ? analysis.getAiResult().getAiConfidence() : 0.0f;
         boolean ai = aiConf > 0.5f;
-        String aiLabel = ai ? "🤖 PHÁT HIỆN DÙNG AI" : "✅ KHÔNG PHÁT HIỆN DÙNG AI";
+        String aiLabel = ai ? "PHÁT HIỆN DÙNG AI" : "KHÔNG PHÁT HIỆN DÙNG AI";
         aiStatusLabel.setText(aiLabel);
-        aiStatusLabel.setForeground(ai ? new Color(255, 80, 80) : new Color(0, 210, 100));
+        aiStatusLabel.setForeground(ai ? new Color(200, 200, 200) : new Color(150, 150, 150));
 
         // Confidence
         int conf = (int)(aiConf * 100);
         aiConfBar.setValue(conf);
         aiConfBar.setString(conf + "%");
-        aiConfBar.setForeground(conf >= 70 ? new Color(255,80,80) : conf >= 40 ? new Color(255,180,0) : new Color(0,200,100));
+        aiConfBar.setForeground(new Color(120, 120, 120));
 
         // 6 tiêu chí
         indicatorsPanel.removeAll();
@@ -475,13 +475,13 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     private void addIndicator(String label, boolean detected, String evidence) {
         JPanel row = new JPanel(new MigLayout("insets 4 6 4 6", "[]8[grow]", ""));
-        row.setBackground(detected ? new Color(70, 25, 25) : new Color(22, 42, 22));
-        JLabel icon = new JLabel(detected ? "⚠️" : "✅");
+        row.setBackground(detected ? new Color(80, 80, 80) : new Color(60, 60, 60));
+        JLabel icon = new JLabel(detected ? "[!]" : "[OK]");
         JLabel text = new JLabel("<html><b>" + label + "</b>"
                 + (detected && evidence != null && !evidence.isBlank()
                    ? "<br><small style='color:#aaa'>" + evidence + "</small>" : "")
                 + "</html>");
-        text.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        text.setFont(new Font("Arial", Font.PLAIN, 11));
         row.add(icon);
         row.add(text, "growx");
         indicatorsPanel.add(row, "growx");
@@ -520,7 +520,7 @@ public class SubmissionAnalysisPanel extends JPanel {
                 try {
                     Analysis a = get();
                     showAnalysis(a);
-                    submissionModel.setValueAt("✅", row, 5);
+                    submissionModel.setValueAt("[x]", row, 5);
                     currentSubmissions.get(row).setAnalyzed(true);
                     mainFrame.refreshEvaluationPanel();
                 } catch (Exception ex) {
@@ -605,8 +605,8 @@ public class SubmissionAnalysisPanel extends JPanel {
             super.getTableCellRendererComponent(t, v, sel, f, r, c);
             setHorizontalAlignment(JLabel.CENTER);
             if (!sel && v != null) {
-                if ("AC".equals(v.toString())) setForeground(new Color(0, 220, 100));
-                else                           setForeground(new Color(255, 80, 80));
+                if ("AC".equals(v.toString())) setForeground(new Color(180, 180, 180));
+                else                           setForeground(new Color(150, 150, 150));
             }
             return this;
         }

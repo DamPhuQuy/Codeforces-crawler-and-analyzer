@@ -1,15 +1,33 @@
 package com.cf.analysis.ui.dialogs;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
+
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rtextarea.RTextScrollPane;
+
 import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.submission.Submission;
 
 import net.miginfocom.swing.MigLayout;
-import org.fife.ui.rsyntaxtextarea.*;
-import org.fife.ui.rtextarea.*;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
 
 /**
  * Dialog xem chi tiết một submission: source code đầy đủ + kết quả AI.
@@ -65,25 +83,25 @@ public class SubmissionDetailDialog extends JDialog {
         header.setBackground(new Color(35, 35, 45));
 
         // Tên bài
-        JLabel probLabel = new JLabel("📝 " + submission.getProblemName());
-        probLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        JLabel probLabel = new JLabel(submission.getProblemName());
+        probLabel.setFont(new Font("Arial", Font.BOLD, 16));
         probLabel.setForeground(Color.WHITE);
 
         // Ngôn ngữ
         JLabel langLabel = new JLabel("[" + submission.getShortLanguage() + "]");
-        langLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        langLabel.setForeground(new Color(180, 200, 220));
+        langLabel.setFont(new Font("Arial", Font.PLAIN, 13));
+        langLabel.setForeground(new Color(180, 180, 180));
 
         // Verdict
         boolean ac = "OK".equals(submission.getVerdict());
-        JLabel verdictLabel = new JLabel(ac ? "✅ Accepted" : "❌ " + submission.getVerdict());
-        verdictLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        verdictLabel.setForeground(ac ? new Color(0, 220, 120) : new Color(255, 80, 80));
+        JLabel verdictLabel = new JLabel(ac ? "[OK] Accepted" : "[X] " + submission.getVerdict());
+        verdictLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        verdictLabel.setForeground(ac ? new Color(180, 180, 180) : new Color(200, 200, 200));
 
         // Thời gian / bộ nhớ
         JLabel perfLabel = new JLabel(submission.getTimeMs() + "ms · " + submission.getMemoryKb() + "KB");
-        perfLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        perfLabel.setForeground(new Color(140, 160, 180));
+        perfLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        perfLabel.setForeground(new Color(160, 160, 160));
 
         header.add(probLabel);
         header.add(langLabel);
@@ -97,7 +115,7 @@ public class SubmissionDetailDialog extends JDialog {
 
     private JPanel buildCodePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("📝 Source Code"));
+        panel.setBorder(BorderFactory.createTitledBorder("Source Code"));
 
         // RSyntaxTextArea với monokai theme
         RSyntaxTextArea codeArea = new RSyntaxTextArea();
@@ -105,7 +123,7 @@ public class SubmissionDetailDialog extends JDialog {
         codeArea.setEditable(false);
         codeArea.setCodeFoldingEnabled(true);
         codeArea.setAntiAliasingEnabled(true);
-        codeArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 13));
+        codeArea.setFont(new Font("Arial", Font.PLAIN, 13));
 
         try {
             Theme.load(getClass().getResourceAsStream(
@@ -150,7 +168,7 @@ public class SubmissionDetailDialog extends JDialog {
     private JLabel makeLabel(String text, Color color) {
         JLabel l = new JLabel(text);
         l.setForeground(color);
-        l.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        l.setFont(new Font("Arial", Font.PLAIN, 11));
         return l;
     }
 
@@ -160,7 +178,7 @@ public class SubmissionDetailDialog extends JDialog {
         JPanel panel = new JPanel(new MigLayout("insets 12, wrap 1", "[grow, fill]", ""));
 
         if (analysis == null) {
-            JLabel noData = new JLabel("⚠️ Chưa có phân tích AI. Chọn submission và bấm Phân Tích.");
+            JLabel noData = new JLabel("[!] Chưa có phân tích AI. Chọn submission và bấm Phân Tích.");
             noData.setForeground(Color.GRAY);
             panel.add(noData);
             return scrollWrap(panel);
@@ -169,10 +187,10 @@ public class SubmissionDetailDialog extends JDialog {
         // ---- AI Verdict ----
         float aiConf = analysis.getAiResult() != null ? analysis.getAiResult().getAiConfidence() : 0.0f;
         boolean aiDetected = aiConf > 0.5f;
-        String verdictText = aiDetected ? "🤖 PHÁT HIỆN DÙNG AI" : "✅ KHÔNG PHÁT HIỆN DÙNG AI";
+        String verdictText = aiDetected ? "[AI] PHÁT HIỆN DÙNG AI" : "[OK] KHÔNG PHÁT HIỆN DÙNG AI";
         JLabel verdict = new JLabel(verdictText);
-        verdict.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        verdict.setForeground(aiDetected ? new Color(255, 80, 80) : new Color(0, 210, 100));
+        verdict.setFont(new Font("Arial", Font.BOLD, 15));
+        verdict.setForeground(aiDetected ? new Color(200, 200, 200) : new Color(180, 180, 180));
         panel.add(verdict);
 
         // ---- Confidence bar ----
@@ -181,15 +199,15 @@ public class SubmissionDetailDialog extends JDialog {
         confBar.setValue(conf);
         confBar.setStringPainted(true);
         confBar.setString("Confidence: " + conf + "%");
-        confBar.setForeground(conf >= 70 ? new Color(255, 80, 80)
-                            : conf >= 40 ? new Color(255, 180, 0)
-                            : new Color(0, 200, 100));
+        confBar.setForeground(conf >= 70 ? new Color(200, 200, 200)
+                            : conf >= 40 ? new Color(180, 180, 180)
+                            : new Color(160, 160, 160));
         panel.add(confBar, "growx, gapbottom 8");
 
         // ---- 6 tiêu chí ----
         if (analysis.getAiResult() != null && analysis.getAiResult().getAiIndicators() != null) {
             panel.add(new JSeparator(), "gaptop 8");
-            panel.add(new JLabel("🔍 6 Tiêu Chí Đánh Giá:"));
+            panel.add(new JLabel("6 Tiêu Chí Đánh Giá:"));
 
             var ind = analysis.getAiResult().getAiIndicators();
             addIndicatorRow(panel, "1. Code quá sạch",         ind.getTooClean().isDetected(),           ind.getTooClean().getEvidence());
@@ -207,27 +225,27 @@ public class SubmissionDetailDialog extends JDialog {
         List<String> algos = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getAlgorithms() : null;
 
         if (ds != null && !ds.isEmpty()) {
-            panel.add(new JLabel("📦 CTDL: " + String.join(", ", ds)));
+            panel.add(new JLabel("CTDL: " + String.join(", ", ds)));
         }
         if (algos != null && !algos.isEmpty()) {
-            panel.add(new JLabel("⚙️ Thuật toán: " + String.join(", ", algos)));
+            panel.add(new JLabel("Thuật toán: " + String.join(", ", algos)));
         }
 
         String timeComp = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getTimeComplexity() : "N/A";
         String spaceComp = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getSpaceComplexity() : "N/A";
         int difficulty = analysis.getComplexityAnalysis() != null ? analysis.getComplexityAnalysis().getDifficultyScore() : 0;
-        panel.add(new JLabel("⏱ Time: " + timeComp + " | Space: " + spaceComp + " | Độ khó: " + difficulty + "/10"));
+        panel.add(new JLabel("Time: " + timeComp + " | Space: " + spaceComp + " | Độ khó: " + difficulty + "/10"));
 
         // ---- Explanation ----
         panel.add(new JSeparator(), "gaptop 8");
-        panel.add(new JLabel("💬 Nhận Xét:"));
+        panel.add(new JLabel("Nhận Xét:"));
 
         String explanation = analysis.getAnalysisOutput() != null ? analysis.getAnalysisOutput().getExplanation() : "";
         JTextArea expArea = new JTextArea(explanation);
         expArea.setEditable(false);
         expArea.setLineWrap(true);
         expArea.setWrapStyleWord(true);
-        expArea.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        expArea.setFont(new Font("Arial", Font.PLAIN, 12));
         expArea.setBackground(new Color(38, 38, 48));
         JScrollPane expScroll = new JScrollPane(expArea);
         expScroll.setPreferredSize(new Dimension(0, 120));
@@ -237,15 +255,15 @@ public class SubmissionDetailDialog extends JDialog {
     }
 
     private void addIndicatorRow(JPanel parent, String label, boolean detected, String evidence) {
-        String icon  = detected ? "⚠️" : "✅";
-        Color  color = detected ? new Color(255, 100, 100) : new Color(100, 220, 100);
+        String icon  = detected ? "[!]" : "[OK]";
+        Color  color = detected ? new Color(200, 200, 200) : new Color(160, 160, 160);
         String html  = "<html>" + icon + " <b>" + label + "</b>"
                        + (detected && evidence != null && !evidence.isBlank()
                            ? " — <i>" + evidence + "</i>" : "")
                        + "</html>";
         JLabel lbl = new JLabel(html);
         lbl.setForeground(color);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lbl.setFont(new Font("Arial", Font.PLAIN, 12));
         parent.add(lbl);
     }
 

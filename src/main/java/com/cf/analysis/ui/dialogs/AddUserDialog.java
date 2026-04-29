@@ -1,12 +1,22 @@
 package com.cf.analysis.ui.dialogs;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
+
 import com.cf.analysis.bll.UserService;
 import com.cf.analysis.model.user.User;
 
 import net.miginfocom.swing.MigLayout;
-
-import javax.swing.*;
-import java.awt.*;
 
 /**
  * Dialog nhập Codeforces handle để thêm user mới.
@@ -57,23 +67,23 @@ public class AddUserDialog extends JDialog {
         // Text field nhập handle
         add(new JLabel("Handle:"));
         handleField = new JTextField(22);
-        handleField.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        handleField.setFont(new Font("Arial", Font.PLAIN, 14));
         handleField.setToolTipText("Nhập Codeforces handle chính xác (case-sensitive)");
         add(handleField, "wrap");
 
         // Label status (thông báo kết quả)
         statusLabel = new JLabel(" "); // Khoảng trắng để giữ chiều cao layout
-        statusLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        statusLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         add(statusLabel, "span 2, wrap");
 
         // Nút Thêm và Hủy
-        okButton = new JButton("✅ Thêm");
-        okButton.setBackground(new Color(63, 81, 181));
+        okButton = new JButton("Thêm");
+        okButton.setBackground(new Color(80, 80, 80));
         okButton.setForeground(Color.WHITE);
         okButton.setFocusPainted(false);
         okButton.setPreferredSize(new Dimension(110, 34));
 
-        cancelButton = new JButton("✖ Hủy");
+        cancelButton = new JButton("Hủy");
         cancelButton.setFocusPainted(false);
         cancelButton.setPreferredSize(new Dimension(90, 34));
 
@@ -107,13 +117,13 @@ public class AddUserDialog extends JDialog {
     private void performAdd() {
         String handle = handleField.getText().trim();
         if (handle.isEmpty()) {
-            showStatus("⚠️ Vui lòng nhập handle!", Color.YELLOW);
+            showStatus("[!] Vui lòng nhập handle!", Color.YELLOW);
             return;
         }
 
         // Disable UI trong khi đang xử lý
         setInputEnabled(false);
-        showStatus("🔄 Đang kiểm tra trên Codeforces...", new Color(100, 180, 255));
+        showStatus("Đang kiểm tra trên Codeforces...", new Color(180, 180, 180));
 
         // ====== SwingWorker: background task ======
         SwingWorker<User, Void> worker = new SwingWorker<>() {
@@ -130,10 +140,10 @@ public class AddUserDialog extends JDialog {
                 try {
                     User user = get(); // Lấy kết quả hoặc ném exception nếu có lỗi
                     showStatus(
-                        "✅ Đã thêm: " + user.getHandle()
+                        "[OK] Đã thêm: " + user.getHandle()
                         + " | Rating: " + user.getRating()
                         + " | " + user.getRank(),
-                        new Color(0, 210, 100)
+                        new Color(180, 180, 180)
                     );
                     success = true;
 
@@ -145,7 +155,7 @@ public class AddUserDialog extends JDialog {
                 } catch (Exception ex) {
                     // Lấy root cause message
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                    showStatus("❌ " + cause.getMessage(), new Color(255, 80, 80));
+                    showStatus("[X] " + cause.getMessage(), new Color(200, 200, 200));
                     setInputEnabled(true); // Cho phép nhập lại
                     handleField.selectAll();
                     handleField.requestFocusInWindow();

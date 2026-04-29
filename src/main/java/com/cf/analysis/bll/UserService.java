@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-import com.cf.analysis.crawler.CodeforcesApiClient;
+import com.cf.analysis.crawler.CodeforcesApiCaller;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.model.user.User;
 
@@ -15,9 +15,9 @@ import com.cf.analysis.model.user.User;
 public class UserService {
 
     private final UserDAO userDAO;
-    private final CodeforcesApiClient cfClient;
+    private final CodeforcesApiCaller cfClient;
 
-    public UserService(UserDAO userDAO, CodeforcesApiClient cfClient) {
+    public UserService(UserDAO userDAO, CodeforcesApiCaller cfClient) {
         this.userDAO = userDAO;
         this.cfClient = cfClient;
     }

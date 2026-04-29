@@ -73,8 +73,8 @@ public class CrawlMonitorPanel extends JPanel {
 
         initComponents();
         appendLog("═══════════════════════════════════════════════════", Color.DARK_GRAY);
-        appendLog("  Codeforces Examination Analysis — Crawl Monitor", new Color(100, 180, 255));
-        appendLog("  Nhấn 'Crawl Tất Cả Ngay' để bắt đầu.", new Color(150, 210, 150));
+        appendLog("  Codeforces Examination Analysis - Crawl Monitor", new Color(150, 150, 150));
+        appendLog("  Nhấn 'Crawl Tất Cả Ngay' để bắt đầu.", new Color(150, 150, 150));
         appendLog("═══════════════════════════════════════════════════", Color.DARK_GRAY);
     }
 
@@ -89,32 +89,32 @@ public class CrawlMonitorPanel extends JPanel {
         JPanel toolbar = new JPanel(new MigLayout("insets 0", "[][]15[]push[]", "[]5[]"));
 
         // ---- Nút Crawl All ----
-        crawlAllBtn = new JButton("▶ Crawl Tất Cả Ngay");
-        crawlAllBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        crawlAllBtn.setBackground(new Color(0, 150, 136)); // Teal
+        crawlAllBtn = new JButton("Crawl Tất Cả Ngay");
+        crawlAllBtn.setFont(new Font("Arial", Font.BOLD, 13));
+        crawlAllBtn.setBackground(new Color(80, 80, 80));
         crawlAllBtn.setForeground(Color.WHITE);
         crawlAllBtn.setFocusPainted(false);
         crawlAllBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // ---- Nút Dừng ----
-        stopBtn = new JButton("⏹ Dừng");
-        stopBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        stopBtn.setBackground(new Color(183, 28, 28));
+        stopBtn = new JButton("Dừng");
+        stopBtn.setFont(new Font("Arial", Font.PLAIN, 13));
+        stopBtn.setBackground(new Color(120, 120, 120));
         stopBtn.setForeground(Color.WHITE);
         stopBtn.setFocusPainted(false);
         stopBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         stopBtn.setEnabled(false);
 
         // ---- Nút Lịch tự động ----
-        scheduleBtn = new JButton("⏰ Bật Lịch Tự Động");
-        scheduleBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        scheduleBtn = new JButton("Bật Lịch Tự Động");
+        scheduleBtn.setFont(new Font("Arial", Font.PLAIN, 13));
         scheduleBtn.setFocusPainted(false);
         scheduleBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Label hiển thị lịch còn active không
         scheduleStatusLabel = new JLabel("Lịch: Chưa bật");
         scheduleStatusLabel.setForeground(Color.GRAY);
-        scheduleStatusLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        scheduleStatusLabel.setFont(new Font("Arial", Font.ITALIC, 12));
 
         toolbar.add(crawlAllBtn);
         toolbar.add(stopBtn);
@@ -134,7 +134,7 @@ public class CrawlMonitorPanel extends JPanel {
 
         stopBtn.addActionListener(e -> {
             crawlService.stopCrawl();
-            appendLog("⏹ Đã gửi yêu cầu dừng...", Color.YELLOW);
+            appendLog("Đã gửi yêu cầu dừng...", Color.LIGHT_GRAY);
             stopBtn.setEnabled(false);
         });
 
@@ -151,11 +151,11 @@ public class CrawlMonitorPanel extends JPanel {
         logPane = new JTextPane();
         logPane.setEditable(false);
         logPane.setBackground(new Color(18, 18, 22));
-        logPane.setFont(new Font("Consolas", Font.PLAIN, 12));
+        logPane.setFont(new Font("Arial", Font.PLAIN, 12));
         logDoc = logPane.getStyledDocument();
 
         JScrollPane scroll = new JScrollPane(logPane);
-        scroll.setBorder(BorderFactory.createTitledBorder("📋 Log Console (Real-time)"));
+        scroll.setBorder(BorderFactory.createTitledBorder("Log Console (Real-time)"));
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         return scroll;
     }
@@ -174,7 +174,7 @@ public class CrawlMonitorPanel extends JPanel {
         stopBtn.setEnabled(true);
         progressBar.setIndeterminate(true);
         progressBar.setString("Đang crawl...");
-        appendLog("\n🚀 === BẮT ĐẦU CRAWL ===", new Color(0, 255, 160));
+        appendLog("\n=== BẮT ĐẦU CRAWL ===", new Color(180, 180, 180));
 
         crawlService.crawlAll(
             // logCallback: CrawlService gọi callback này với mỗi dòng log
@@ -196,8 +196,8 @@ public class CrawlMonitorPanel extends JPanel {
                 mainFrame.refreshSubmissionPanel();
                 mainFrame.refreshUserPanel();
 
-                appendLog("✅ === CRAWL HOÀN TẤT: +" + totalNew + " submissions ===\n",
-                          new Color(0, 255, 160));
+                appendLog("=== CRAWL HOÀN TẤT: +" + totalNew + " submissions ===\n",
+                          new Color(180, 180, 180));
             })
         );
     }
@@ -217,25 +217,25 @@ public class CrawlMonitorPanel extends JPanel {
             );
 
             scheduleActive = true;
-            scheduleBtn.setText("⏰ Tắt Lịch Tự Động");
-            scheduleBtn.setBackground(new Color(183, 28, 28));
+            scheduleBtn.setText("Tắt Lịch Tự Động");
+            scheduleBtn.setBackground(new Color(120, 120, 120));
             scheduleBtn.setForeground(Color.WHITE);
             scheduleStatusLabel.setText("Lịch: mỗi " + hours + "h | Đang hoạt động");
-            scheduleStatusLabel.setForeground(new Color(0, 210, 100));
+            scheduleStatusLabel.setForeground(new Color(150, 150, 150));
 
-            appendLog("⏰ Lịch tự động đã bật (mỗi " + hours + " giờ)", new Color(0, 210, 100));
+            appendLog("Lịch tự động đã bật (mỗi " + hours + " giờ)", new Color(150, 150, 150));
 
         } else {
             // Tắt lịch
             crawlService.stopSchedule();
             scheduleActive = false;
-            scheduleBtn.setText("⏰ Bật Lịch Tự Động");
+            scheduleBtn.setText("Bật Lịch Tự Động");
             scheduleBtn.setBackground(null);
             scheduleBtn.setForeground(null);
             scheduleStatusLabel.setText("Lịch: Chưa bật");
             scheduleStatusLabel.setForeground(Color.GRAY);
 
-            appendLog("⏹ Đã tắt lịch tự động.", Color.YELLOW);
+            appendLog("Đã tắt lịch tự động.", Color.LIGHT_GRAY);
         }
     }
 
@@ -276,13 +276,9 @@ public class CrawlMonitorPanel extends JPanel {
 
     /** Chọn màu log theo nội dung message. */
     private Color getMessageColor(String msg) {
-        if (msg.contains("✅") || msg.contains("Hoàn tất")) return new Color(0, 220, 120);
-        if (msg.contains("❌") || msg.contains("Lỗi"))      return new Color(255, 80,  80);
-        if (msg.contains("⚠️") || msg.contains("⚠"))        return new Color(255, 200,  0);
-        if (msg.contains("🚀") || msg.contains("==="))       return new Color(0,  255, 160);
-        if (msg.contains("📥") || msg.contains("→"))         return new Color(100, 180, 255);
-        if (msg.contains("⏰"))                               return new Color(0,  200, 100);
-        if (msg.contains("⏹"))                               return Color.YELLOW;
+        if (msg.contains("Hoàn tất") || msg.contains("thành công")) return new Color(180, 180, 180);
+        if (msg.contains("Lỗi") || msg.contains("lỗi"))             return new Color(200, 200, 200);
+        if (msg.contains("==="))                                     return new Color(160, 160, 160);
         return new Color(190, 190, 190);
     }
 

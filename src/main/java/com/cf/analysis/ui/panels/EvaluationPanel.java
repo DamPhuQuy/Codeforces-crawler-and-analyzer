@@ -74,11 +74,11 @@ public class EvaluationPanel extends JPanel {
     private void initComponents() {
         // ---- Header ----
         JPanel header = new JPanel(new MigLayout("insets 0", "[]push[]", ""));
-        JLabel title = new JLabel("📊 Bảng Xếp Hạng Năng Lực");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 17));
+        JLabel title = new JLabel("Bảng Xếp Hạng Năng Lực");
+        title.setFont(new Font("Arial", Font.BOLD, 17));
         header.add(title);
 
-        refreshBtn = new JButton("🔃 Tính Lại Điểm");
+        refreshBtn = new JButton("Tính Lại Điểm");
         refreshBtn.setFocusPainted(false);
         refreshBtn.addActionListener(e -> loadData());
         header.add(refreshBtn);
@@ -102,7 +102,7 @@ public class EvaluationPanel extends JPanel {
         rankTable = new JTable(rankModel);
         rankTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         rankTable.setRowHeight(32);
-        rankTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        rankTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
         rankTable.getTableHeader().setReorderingAllowed(false);
 
         // Renderers
@@ -149,19 +149,19 @@ public class EvaluationPanel extends JPanel {
 
         // Badge
         badgeLabel = new JLabel("Chọn user để xem chi tiết");
-        badgeLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 16));
+        badgeLabel.setFont(new Font("Arial", Font.BOLD, 16));
         badgeLabel.setHorizontalAlignment(JLabel.CENTER);
         panel.add(badgeLabel, "growx");
 
         // Level
         levelLabel = new JLabel("");
-        levelLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        levelLabel.setFont(new Font("Arial", Font.BOLD, 14));
         levelLabel.setHorizontalAlignment(JLabel.CENTER);
         panel.add(levelLabel, "growx");
 
         // Stats
         statsLabel = new JLabel("<html></html>");
-        statsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statsLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         panel.add(statsLabel, "growx, gaptop 8");
 
         return panel;
@@ -208,11 +208,11 @@ public class EvaluationPanel extends JPanel {
         radarChart.setScores(score.getDsScore(), score.getAlgorithmScore(), score.getAiScore());
         badgeLabel.setText(score.getBadge());
 
-        levelLabel.setText("🏆 Level: " + score.getLevel().name());
+        levelLabel.setText("Level: " + score.getLevel().name());
         levelLabel.setForeground(switch (score.getLevel()) {
-            case EXPERT       -> new Color(255, 80, 80);
-            case ADVANCED     -> new Color(255, 150, 0);
-            case INTERMEDIATE -> new Color(100, 200, 255);
+            case EXPERT       -> new Color(200, 200, 200);
+            case ADVANCED     -> new Color(180, 180, 180);
+            case INTERMEDIATE -> new Color(160, 160, 160);
             default           -> Color.GRAY;
         });
 
@@ -292,7 +292,7 @@ public class EvaluationPanel extends JPanel {
 
                 // Nhãn % trên trục đầu
                 g2.setColor(new Color(90, 90, 100));
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 9));
+                g2.setFont(new Font("Arial", Font.PLAIN, 9));
                 int lx = (int)(cx + (rr + 4) * Math.cos(angles[0]));
                 int ly = (int)(cy + (rr + 4) * Math.sin(angles[0]));
                 g2.drawString(ring * 33 + "%", lx + 3, ly);
@@ -314,20 +314,20 @@ public class EvaluationPanel extends JPanel {
 
             // Fill bán trong suốt
             g2.setStroke(new BasicStroke(2));
-            g2.setColor(new Color(63, 81, 181, 90));
+            g2.setColor(new Color(100, 100, 100, 90));
             g2.fillPolygon(dx, dy, 3);
-            g2.setColor(new Color(100, 140, 255, 200));
+            g2.setColor(new Color(150, 150, 150, 200));
             g2.drawPolygon(dx, dy, 3);
 
             // Điểm dữ liệu
-            g2.setColor(new Color(255, 215, 0));
+            g2.setColor(new Color(180, 180, 180));
             for (int i = 0; i < 3; i++) {
                 g2.fillOval(dx[i] - 5, dy[i] - 5, 10, 10);
             }
 
             // ---- Nhãn trục ----
-            g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            g2.setColor(new Color(200, 210, 230));
+            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            g2.setColor(new Color(180, 180, 180));
             for (int i = 0; i < 3; i++) {
                 int lx = (int)(cx + (r + 28) * Math.cos(angles[i]));
                 int ly = (int)(cy + (r + 28) * Math.sin(angles[i]));
@@ -342,12 +342,12 @@ public class EvaluationPanel extends JPanel {
                 int tw2 = fm.stringWidth(line2);
                 g2.drawString(line1, lx - tw1 / 2, ly - 2);
 
-                g2.setColor(new Color(255, 215, 0));
-                g2.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                g2.setColor(new Color(160, 160, 160));
+                g2.setFont(new Font("Arial", Font.BOLD, 11));
                 g2.drawString(line2, lx - tw2 / 2, ly + 13);
 
-                g2.setColor(new Color(200, 210, 230));
-                g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                g2.setColor(new Color(180, 180, 180));
+                g2.setFont(new Font("Arial", Font.BOLD, 12));
             }
         }
     }
@@ -359,13 +359,13 @@ public class EvaluationPanel extends JPanel {
         public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean f, int r, int c) {
             super.getTableCellRendererComponent(t, v, sel, f, r, c);
             setHorizontalAlignment(JLabel.CENTER);
-            setFont(new Font("Segoe UI", Font.BOLD, 13));
+            setFont(new Font("Arial", Font.BOLD, 13));
             if (!sel && v != null) {
                 try {
                     double score = Double.parseDouble(v.toString());
-                    if      (score >= 75) setForeground(new Color(255, 215, 0));
-                    else if (score >= 55) setForeground(new Color(0, 200, 120));
-                    else if (score >= 35) setForeground(new Color(100, 180, 255));
+                    if      (score >= 75) setForeground(new Color(200, 200, 200));
+                    else if (score >= 55) setForeground(new Color(180, 180, 180));
+                    else if (score >= 35) setForeground(new Color(160, 160, 160));
                     else                  setForeground(Color.GRAY);
                 } catch (NumberFormatException ignored) {}
             }
@@ -380,9 +380,9 @@ public class EvaluationPanel extends JPanel {
             setHorizontalAlignment(JLabel.CENTER);
             if (!sel && v != null) {
                 switch (v.toString()) {
-                    case "EXPERT"       -> setForeground(new Color(255, 80,  80));
-                    case "ADVANCED"     -> setForeground(new Color(255, 150, 0));
-                    case "INTERMEDIATE" -> setForeground(new Color(100, 200, 255));
+                    case "EXPERT"       -> setForeground(new Color(200, 200, 200));
+                    case "ADVANCED"     -> setForeground(new Color(180, 180, 180));
+                    case "INTERMEDIATE" -> setForeground(new Color(160, 160, 160));
                     default             -> setForeground(Color.GRAY);
                 }
             }
@@ -398,9 +398,9 @@ public class EvaluationPanel extends JPanel {
             if (!sel && v != null) {
                 try {
                     double pct = Double.parseDouble(v.toString().replace("%",""));
-                    if      (pct >= 50) setForeground(new Color(255, 80,  80));
-                    else if (pct >= 20) setForeground(new Color(255, 150, 0));
-                    else                setForeground(new Color(0, 200, 120));
+                    if      (pct >= 50) setForeground(new Color(200, 200, 200));
+                    else if (pct >= 20) setForeground(new Color(180, 180, 180));
+                    else                setForeground(new Color(160, 160, 160));
                 } catch (NumberFormatException ignored) {}
             }
             return this;

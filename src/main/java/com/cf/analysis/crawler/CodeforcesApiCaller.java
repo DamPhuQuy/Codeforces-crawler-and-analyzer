@@ -195,4 +195,58 @@ public class CodeforcesApiCaller {
         }
         return TestSet.SAMPLES;
     }
+
+    public String getSubmissionSourceCode(Integer contestId, long submissionId) throws IOException {
+        if (contestId == null || contestId == 0) {
+            return null;
+        }
+
+        rateLimiter.acquire();
+
+        String url = String.format("https://codeforces.com/contest/%d/submission/%d", contestId, submissionId);
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
+                return null;
+            }
+
+            String html = response.body().string();
+
+            // Tìm source code trong HTML
+            // CF đặt code trong <pre> tag với id="program-source-text"
+            String marker = "id=\"program-source-text\"";
+            int startIdx = html.indexOf(marker);
+            if (startIdx == -1) {
+                return null;
+            }
+
+            // Tìm thẻ <pre> mở
+            int preStart = html.indexOf('>', startIdx) + 1;
+            int preEnd = html.indexOf("</pre>", preStart);
+
+            if (preEnd == -1) {
+                return null;
+            }
+
+            String code = html.substring(preStart, preEnd);
+
+            // Decode HTML entities
+            code = code.replace("&lt;", "<")
+                       .replace("&gt;", ">")
+                       .replace("&amp;", "&")
+                       .replace("&quot;", "\"")
+                       .replace("&#39;", "'")
+                       .replace("&nbsp;", " ");
+
+            return code.trim();
+
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy source code: " + e.getMessage());
+            return null;
+        }
+    }
 }

@@ -17,51 +17,50 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
+import com.cf.analysis.bll.AnalysisService;
+import com.cf.analysis.bll.CrawlService;
+import com.cf.analysis.bll.EvaluationService;
+import com.cf.analysis.bll.SettingsService;
+import com.cf.analysis.bll.UserService;
+import com.cf.analysis.crawler.CodeforcesApiCaller;
+import com.cf.analysis.dal.AnalysisDAO;
+import com.cf.analysis.dal.SubmissionDAO;
+import com.cf.analysis.dal.UserDAO;
+import com.cf.analysis.dal.UserScoreDAO;
 import com.cf.analysis.db.DatabaseConnection;
 import com.cf.analysis.ui.panels.CrawlMonitorPanel;
 import com.cf.analysis.ui.panels.EvaluationPanel;
 import com.cf.analysis.ui.panels.SettingsPanel;
 import com.cf.analysis.ui.panels.SubmissionAnalysisPanel;
 import com.cf.analysis.ui.panels.UserManagementPanel;
+import com.google.gson.Gson;
 
 import net.miginfocom.swing.MigLayout;
+import okhttp3.OkHttpClient;
 
-/**
- * Frame chính của ứng dụng - LAYER 1 (GUI).
- *
- * Chỉ làm 2 việc:
- * 1. Tổ chức layout: header + JTabbedPane (5 tabs) + status bar
- * 2. Cung cấp phương thức refresh để các panel gọi nhau
- *
- * KHÔNG có bất kỳ logic nghiệp vụ nào ở đây.
- */
 public class MainFrame extends JFrame {
 
-    // ====== 5 Panels của 5 tabs ======
-    private UserManagementPanel     userManagementPanel;
-    private CrawlMonitorPanel       crawlMonitorPanel;
+    private UserManagementPanel userManagementPanel;
+    private CrawlMonitorPanel crawlMonitorPanel;
     private SubmissionAnalysisPanel submissionAnalysisPanel;
-    private EvaluationPanel         evaluationPanel;
-    private SettingsPanel           settingsPanel;
+    private EvaluationPanel evaluationPanel;
+    private SettingsPanel settingsPanel;
 
     private JLabel statusBarLabel;
 
     public MainFrame() {
-        setTitle("⚡ Codeforces Examination Analysis System");
+        setTitle("Codeforces Examination Analysis System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1200, 700));
         setPreferredSize(new Dimension(1450, 850));
 
-        // Cố gắng kết nối DB khi khởi động
         initDatabase();
 
-        // Xây dựng UI
         buildUI();
 
         pack();
-        setLocationRelativeTo(null); // Căn giữa màn hình
+        setLocationRelativeTo(null);
 
-        // Dọn dẹp khi đóng app
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -73,54 +72,36 @@ public class MainFrame extends JFrame {
         });
     }
 
-    /**
-     * Kết nối DB và chạy Flyway migrations.
-     * Nếu thất bại, vẫn mở app để user vào Settings cấu hình.
-     */
     private void initDatabase() {
         try {
             DatabaseConnection db = new DatabaseConnection();
-            // db.connect();
-            // db.runMigrations(); // Flyway: V1 schema + V2 views + V3 settings + V4 seeds
-            System.out.println("✅ Database và migrations sẵn sàng!");
+            System.out.println("Database và migrations sẵn sàng!");
         } catch (Exception e) {
-            System.err.println("⚠️ Chưa kết nối được DB: " + e.getMessage());
-            // Sẽ thông báo cho user qua StatusBar sau khi UI dựng xong
+            System.err.println("Chưa kết nối được DB: " + e.getMessage());
         }
     }
 
-    /**
-     * Xây dựng toàn bộ UI chính.
-     */
     private void buildUI() {
         setLayout(new BorderLayout());
 
-        // -- Header gradient ở trên cùng --
         add(buildHeaderPanel(), BorderLayout.NORTH);
 
-        // -- JTabbedPane với 5 tabs --
         JTabbedPane tabs = buildTabbedPane();
         add(tabs, BorderLayout.CENTER);
 
-        // -- Status bar ở dưới cùng --
         add(buildStatusBar(), BorderLayout.SOUTH);
     }
 
-    /**
-     * Tạo header panel với gradient màu và tiêu đề.
-     */
     private JPanel buildHeaderPanel() {
-        // JPanel với custom painting để vẽ gradient
         JPanel header = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                // Gradient: Indigo → Cyan
                 GradientPaint gradient = new GradientPaint(
-                    0, 0,           new Color(48, 63, 159),   // Indigo
-                    getWidth(), 0,  new Color(0, 172, 193)    // Cyan
+                    0, 0,           new Color(50, 50, 50),
+                    getWidth(), 0,  new Color(70, 70, 70)
                 );
                 g2.setPaint(gradient);
                 g2.fillRect(0, 0, getWidth(), getHeight());
@@ -131,23 +112,23 @@ public class MainFrame extends JFrame {
         header.setPreferredSize(new Dimension(0, 65));
 
         // Tiêu đề
-        JLabel titleLabel = new JLabel("⚡ Codeforces Examination Analysis");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        JLabel titleLabel = new JLabel("Codeforces Examination Analysis");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
         titleLabel.setForeground(Color.WHITE);
 
         // Subtitle
-        JLabel subLabel = new JLabel("  Crawl · Phân Tích AI · Đánh Giá Năng Lực");
-        subLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        subLabel.setForeground(new Color(200, 230, 255));
+        JLabel subLabel = new JLabel("Crawl - Phân Tích AI - Đánh Giá Năng Lực");
+        subLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        subLabel.setForeground(new Color(180, 180, 180));
 
         JPanel textPanel = new JPanel(new MigLayout("insets 0", "[grow]", "[]2[]"));
         textPanel.setOpaque(false);
         textPanel.add(titleLabel, "wrap");
         textPanel.add(subLabel);
 
-        JLabel poweredBy = new JLabel("Powered by Google Gemini AI ✨");
-        poweredBy.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        poweredBy.setForeground(new Color(180, 210, 240));
+        JLabel poweredBy = new JLabel("Powered by Google Gemini AI");
+        poweredBy.setFont(new Font("Arial", Font.PLAIN, 11));
+        poweredBy.setForeground(new Color(160, 160, 160));
 
         header.add(textPanel);
         header.add(poweredBy);
@@ -161,23 +142,43 @@ public class MainFrame extends JFrame {
      */
     private JTabbedPane buildTabbedPane() {
         JTabbedPane tabs = new JTabbedPane();
-        tabs.setTabPlacement(JTabbedPane.LEFT);  // Tab list nằm bên trái
-        tabs.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tabs.setTabPlacement(JTabbedPane.LEFT);
+        tabs.setFont(new Font("Arial", Font.PLAIN, 13));
+
+        // Khởi tạo Database và Services
+        DatabaseConnection db = new DatabaseConnection();
+        Gson gson = new Gson();
+        OkHttpClient httpClient = new OkHttpClient();
+
+        // DAOs
+        UserDAO userDAO = new UserDAO(db);
+        SubmissionDAO submissionDAO = new SubmissionDAO(db);
+        AnalysisDAO analysisDAO = new AnalysisDAO(db, gson);
+        UserScoreDAO userScoreDAO = new UserScoreDAO(db);
+
+        // API Client
+        CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
+
+        // Services
+        SettingsService settingsService = new SettingsService();
+        UserService userService = new UserService(userDAO, cfClient);
+        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, cfClient, settingsService);
+        AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, settingsService);
+        EvaluationService evaluationService = new EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
 
         // Khởi tạo 5 panels
-        // Truyền "this" để panels có thể gọi refresh methods
-        // userManagementPanel     = new UserManagementPanel(this);
-        // crawlMonitorPanel       = new CrawlMonitorPanel(this);
-        // submissionAnalysisPanel = new SubmissionAnalysisPanel(this);
-        // evaluationPanel         = new EvaluationPanel(this);
+        userManagementPanel     = new UserManagementPanel(this, userService);
+        crawlMonitorPanel       = new CrawlMonitorPanel(this, crawlService, settingsService);
+        submissionAnalysisPanel = new SubmissionAnalysisPanel(this, userService, analysisService);
+        evaluationPanel         = new EvaluationPanel(this, evaluationService);
         settingsPanel           = new SettingsPanel(this);
 
-        // Thêm vào tabs với nhãn có icon emoji
-        tabs.addTab("  👥 Quản Lý Nick  ", userManagementPanel);
-        tabs.addTab("  🔄 Crawl Monitor ", crawlMonitorPanel);
-        tabs.addTab("  🔍 Phân Tích     ", submissionAnalysisPanel);
-        tabs.addTab("  📊 Đánh Giá      ", evaluationPanel);
-        tabs.addTab("  ⚙️ Cài Đặt       ", settingsPanel);
+        // Thêm vào tabs
+        tabs.addTab("  Quản Lý Nick  ", userManagementPanel);
+        tabs.addTab("  Crawl Monitor ", crawlMonitorPanel);
+        tabs.addTab("  Phân Tích     ", submissionAnalysisPanel);
+        tabs.addTab("  Đánh Giá      ", evaluationPanel);
+        tabs.addTab("  Cài Đặt       ", settingsPanel);
 
         return tabs;
     }
@@ -190,8 +191,8 @@ public class MainFrame extends JFrame {
         statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
         statusBar.setPreferredSize(new Dimension(0, 24));
 
-        statusBarLabel = new JLabel("  ✅ Sẵn sàng | Codeforces Examination Analysis v1.0");
-        statusBarLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        statusBarLabel = new JLabel("  Sẵn sàng | Codeforces Examination Analysis v1.0");
+        statusBarLabel.setFont(new Font("Arial", Font.PLAIN, 11));
         statusBar.add(statusBarLabel, BorderLayout.WEST);
 
         return statusBar;

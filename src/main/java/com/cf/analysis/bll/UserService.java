@@ -8,10 +8,6 @@ import com.cf.analysis.crawler.CodeforcesApiCaller;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.model.user.User;
 
-/**
- * BLL - Nghiệp vụ quản lý Users.
- * Phối hợp giữa CodeforcesApiClient (lấy data từ CF) và UserDAO (lưu vào DB).
- */
 public class UserService {
 
     private final UserDAO userDAO;
@@ -22,13 +18,6 @@ public class UserService {
         this.cfClient = cfClient;
     }
 
-    /**
-     * Thêm Codeforces handle vào hệ thống.
-     * Tự động gọi CF API để lấy thông tin và lưu vào DB.
-     *
-     * @throws IllegalArgumentException nếu handle đã tồn tại
-     * @throws IOException              nếu handle không tồn tại trên CF hoặc lỗi mạng
-     */
     public User addUser(String handle) throws Exception {
         // Kiểm tra trùng trước
         User existing = userDAO.findByHandle(handle.trim());

@@ -7,7 +7,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.text.SimpleDateFormat;
-import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;

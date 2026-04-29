@@ -1,0 +1,43 @@
+- Cơ chế là sử dung một cái browser ảo với playwright
+<dependencies>
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.58.0</version>
+        </dependency>
+    </dependencies>
+
+- Loại bỏ các dòng nhận diện automation để vượt cloudflared verification, 
+Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(false)
+                    // Loại bỏ các dòng nhận diện automation
+                    .setArgs(List.of("--disable-blink-features=AutomationControlled")));
+
+Đối với các tài khoản lâu năm, có submission vài problem thì sẽ có thể xem được submission code từ 
+https://codeforces.com/contest/XXX/submission/YYY, tuỳ theo các submission trong contest mà có thể xem được các submission được public xem hay không (contest đã kết thúc)
+
+Đối với các tài khoản mới tạo, chưa có submission nào thì source code sẽ ở chế độ là N/A và không thể nào xem được.
+
+- Kĩ thuật để có thể crawl được nhiều đó là sử dung kĩ thuật "session persistence" (duy trì phiên làm việc), lưu trạng thái đăng nhập vào một file state.json (bao gồm cookies và localStorage) từ các tài khoản lâu năm để vượt qua cơ chế N/A mà không cần phải đăng nhập lại nhiều lần (nếu muốn crawl nhiều handle khác nhau).
+
+- Cơ chế hoạt động của state.json: Khi bạn đăng nhập thủ công trên trình duyệt, các thông tin xác thực quan trọng nhất sẽ nằm ở:
++ Cookies: Chứa JSESSIONID (để định danh phiên làm việc trên server CF) và 39ce3 (thường dùng để vượt qua Cloudflare/WAF).
++ LocalStorage: Một số trang web hiện đại dùng để lưu các Token bổ sung hoặc trạng thái UI, nhưng với Codeforces, Cookies là quan trọng nhất.
+
+context.storageState(new BrowserContext.StorageStateOptions().setPath(Paths.get("state.json")));
+
+// Nạp session từ file đã lưu
+Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(false)
+                    // Loại bỏ các dòng nhận diện automation
+                    .setArgs(List.of("--disable-blink-features=AutomationControlled")));
+BrowserContext context = browser.newContext(new Browser.NewContextOptions()
+                    .setStorageStatePath(Paths.get("state.json")));
+
+Lưu ý: 
+Hạn sử dụng của Cookie: Cookie không tồn tại vĩnh viễn. Nếu một ngày bạn thấy kết quả trả về N/A hoặc bị redirect về trang Login, nghĩa là JSESSIONID đã hết hạn. Bạn cần mở trình duyệt, lấy lại cookie mới và cập nhật vào state.json.
+
+Tần suất Crawl (Rate Limiting): Đừng crawl quá nhanh. Với tài khoản lâu năm, bạn nên để delay khoảng 3-5 giây giữa mỗi lần lấy source code.
+
+Header nhất quán: Nếu bạn lấy Cookie từ trình duyệt Chrome trên Linux, hãy đảm bảo User-Agent trong code Java cũng phải khai báo đúng là Chrome trên Linux. Nếu Cookie của Chrome mà User-Agent lại là Java HttpClient, Codeforces sẽ đánh dấu là nghi vấn ngay.
+

@@ -1,6 +1,5 @@
 package com.cf.analysis.ui.controllers;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import com.cf.analysis.bll.CrawlService;

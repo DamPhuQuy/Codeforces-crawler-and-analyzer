@@ -16,7 +16,6 @@ public class Main {
         try {
             FlatDarkLaf.setup();
 
-            // Tuỳ chỉnh appearance
             UIManager.put("Component.arc", 8);
             UIManager.put("Button.arc", 8);
             UIManager.put("TextComponent.arc", 6);
@@ -26,7 +25,6 @@ public class Main {
             UIManager.put("Table.alternateRowColor", new Color(35, 35, 40));
             UIManager.put("TitlePane.background", new Color(30, 30, 35));
 
-            // Cấu hình font hỗ trợ tiếng Việt
             Font defaultFont = new Font("Arial", Font.PLAIN, 13);
             Font boldFont = new Font("Arial", Font.BOLD, 13);
 

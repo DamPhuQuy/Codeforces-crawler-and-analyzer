@@ -17,23 +17,21 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 import com.cf.analysis.bll.UserService;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
+import com.cf.analysis.ui.controllers.UserManagementController;
 import com.cf.analysis.ui.dialogs.AddUserDialog;
 
 import net.miginfocom.swing.MigLayout;
 
-/**
-
- */
 public class UserManagementPanel extends JPanel {
 
     private final UserService userService;
+    private final UserManagementController controller;
 
     private JTable userTable;
     private DefaultTableModel tableModel;
@@ -46,18 +44,18 @@ public class UserManagementPanel extends JPanel {
         "Handle", "Tên hiển thị", "Rating", "Max Rating", "Rank", "Quốc gia", "Thêm lúc", "Crawl gần nhất"
     };
 
-    private final MainFrame mainFrame; // refresh main frame
+    private final MainFrame mainFrame;
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
     public UserManagementPanel(MainFrame mainFrame, UserService userService) {
         this.mainFrame = mainFrame;
         this.userService = userService;
+        this.controller = new UserManagementController(userService);
 
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
         initComponents();
-
         loadData();
     }
 
@@ -89,7 +87,7 @@ public class UserManagementPanel extends JPanel {
         deleteButton.setForeground(Color.WHITE);
         deleteButton.setFocusPainted(false);
         deleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        deleteButton.setEnabled(false); // true when row selected
+        deleteButton.setEnabled(false); // true when row is selected
 
         refreshRatingBtn = new JButton("Cập Nhật Rating");
         refreshRatingBtn.setFont(new Font("Arial", Font.PLAIN, 13));
@@ -177,15 +175,17 @@ public class UserManagementPanel extends JPanel {
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                userService.removeUser(handle);
-                loadData();
-                setStatus("Đã xóa nick: " + handle);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame,
-                    "Lỗi xóa: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+            controller.removeUserAsync(handle)
+                .thenRun(() -> {
+                    loadData();
+                    setStatus("Đã xóa nick: " + handle);
+                })
+                .exceptionally(ex -> {
+                    JOptionPane.showMessageDialog(mainFrame,
+                        "Lỗi xóa: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return null;
+                });
         }
     }
 
@@ -197,64 +197,44 @@ public class UserManagementPanel extends JPanel {
         refreshRatingBtn.setEnabled(false);
         setStatus("Đang cập nhật rating của " + handle + "...");
 
-        SwingWorker<User, Void> worker = new SwingWorker<>() {
-            @Override
-            protected User doInBackground() throws Exception {
-                return userService.refreshUserInfo(handle); // Gọi CF API
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    User updated = get();
-                    loadData(); // Reload bảng
-                    refreshRatingBtn.setEnabled(true);
-                    setStatus("Cập nhật thành công: " + handle
-                            + " | Rating: " + (updated != null ? updated.getRating() : "?"));
-                } catch (Exception ex) {
-                    refreshRatingBtn.setEnabled(true);
-                    setStatus("Lỗi: " + ex.getMessage());
-                }
-            }
-        };
-        worker.execute();
+        controller.refreshUserInfoAsync(handle)
+            .thenAccept(updated -> {
+                loadData(); // Reload bảng
+                refreshRatingBtn.setEnabled(true);
+                setStatus("Cập nhật thành công: " + handle
+                        + " | Rating: " + (updated != null ? updated.getRating() : "?"));
+            })
+            .exceptionally(ex -> {
+                refreshRatingBtn.setEnabled(true);
+                setStatus("Lỗi: " + ex.getMessage());
+                return null;
+            });
     }
 
     public void loadData() {
-        SwingWorker<List<User>, Void> worker = new SwingWorker<>() {
-            @Override
-            protected List<User> doInBackground() throws Exception {
-                return userService.getAllUsers();
-            }
+        controller.getAllUsersAsync()
+            .thenAccept(users -> {
+                tableModel.setRowCount(0);
 
-            @Override
-            protected void done() {
-                try {
-                    List<User> users = get();
-
-                    tableModel.setRowCount(0);
-
-                    for (User u : users) {
-                        tableModel.addRow(new Object[]{
-                            u.getHandle(),
-                            u.getDisplayName() != null ? u.getDisplayName() : "",
-                            u.getRating(),
-                            u.getMaxRating(),
-                            u.getRank() != null ? u.getRank() : "newbie",
-                            u.getCountry() != null ? u.getCountry() : "",
-                            u.getAddedDate()    != null ? sdf.format(u.getAddedDate())    : "N/A",
-                            u.getLastCrawlAt()  != null ? sdf.format(u.getLastCrawlAt())  : "Chưa crawl"
-                        });
-                    }
-
-                    setStatus("Đã tải " + users.size() + " nick.");
-
-                } catch (Exception ex) {
-                    setStatus("Lỗi tải dữ liệu: " + ex.getMessage());
+                for (User u : users) {
+                    tableModel.addRow(new Object[]{
+                        u.getHandle(),
+                        u.getDisplayName() != null ? u.getDisplayName() : "",
+                        u.getRating(),
+                        u.getMaxRating(),
+                        u.getRank() != null ? u.getRank() : "newbie",
+                        u.getCountry() != null ? u.getCountry() : "",
+                        u.getAddedDate()    != null ? sdf.format(u.getAddedDate())    : "N/A",
+                        u.getLastCrawlAt()  != null ? sdf.format(u.getLastCrawlAt())  : "Chưa crawl"
+                    });
                 }
-            }
-        };
-        worker.execute();
+
+                setStatus("Đã tải " + users.size() + " nick.");
+            })
+            .exceptionally(ex -> {
+                setStatus("Lỗi tải dữ liệu: " + ex.getMessage());
+                return null;
+            });
     }
 
     public void refreshData() {

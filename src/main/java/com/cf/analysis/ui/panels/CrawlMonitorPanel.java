@@ -24,6 +24,7 @@ import javax.swing.text.StyledDocument;
 import com.cf.analysis.bll.CrawlService;
 import com.cf.analysis.bll.SettingsService;
 import com.cf.analysis.ui.MainFrame;
+import com.cf.analysis.ui.controllers.CrawlMonitorController;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -47,6 +48,7 @@ public class CrawlMonitorPanel extends JPanel {
     // ====== Services ======
     private final CrawlService crawlService;
     private final SettingsService settingsService;
+    private final CrawlMonitorController controller;
 
     // ====== UI Components ======
     private JButton     crawlAllBtn;
@@ -68,6 +70,7 @@ public class CrawlMonitorPanel extends JPanel {
         this.mainFrame = mainFrame;
         this.crawlService = crawlService;
         this.settingsService = settingsService;
+        this.controller = new CrawlMonitorController(crawlService, settingsService);
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
@@ -133,7 +136,7 @@ public class CrawlMonitorPanel extends JPanel {
         crawlAllBtn.addActionListener(e -> startCrawlAll());
 
         stopBtn.addActionListener(e -> {
-            crawlService.stopCrawl();
+            controller.stopCrawl();
             appendLog("Đã gửi yêu cầu dừng...", Color.LIGHT_GRAY);
             stopBtn.setEnabled(false);
         });
@@ -176,7 +179,7 @@ public class CrawlMonitorPanel extends JPanel {
         progressBar.setString("Đang crawl...");
         appendLog("\n=== BẮT ĐẦU CRAWL ===", new Color(180, 180, 180));
 
-        crawlService.crawlAll(
+        controller.crawlAllUsersAsync(
             // logCallback: CrawlService gọi callback này với mỗi dòng log
             // IMPORTANT: phải dùng invokeLater vì callback chạy trên background thread!
             message -> SwingUtilities.invokeLater(() -> {
@@ -208,8 +211,8 @@ public class CrawlMonitorPanel extends JPanel {
     private void toggleSchedule() {
         if (!scheduleActive) {
             // Bật lịch
-            int hours = settingsService.getCrawlIntervalHours();
-            crawlService.startSchedule(hours,
+            int hours = controller.getCrawlIntervalHours();
+            controller.startSchedule(hours,
                 msg -> SwingUtilities.invokeLater(() -> {
                     appendLog(msg, getMessageColor(msg));
                     scrollToBottom();
@@ -227,7 +230,7 @@ public class CrawlMonitorPanel extends JPanel {
 
         } else {
             // Tắt lịch
-            crawlService.stopSchedule();
+            controller.stopSchedule();
             scheduleActive = false;
             scheduleBtn.setText("Bật Lịch Tự Động");
             scheduleBtn.setBackground(null);
@@ -289,7 +292,7 @@ public class CrawlMonitorPanel extends JPanel {
 
     /** Dừng tất cả task khi app đóng. */
     public void stopAll() {
-        crawlService.stopCrawl();
-        crawlService.stopSchedule();
+        controller.stopCrawl();
+        controller.stopSchedule();
     }
 }

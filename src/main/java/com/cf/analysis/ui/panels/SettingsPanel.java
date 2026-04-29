@@ -17,6 +17,7 @@ import javax.swing.border.TitledBorder;
 import com.cf.analysis.bll.SettingsService;
 import com.cf.analysis.db.DatabaseConnection;
 import com.cf.analysis.ui.MainFrame;
+import com.cf.analysis.ui.controllers.SettingsController;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -36,6 +37,7 @@ public class SettingsPanel extends JPanel {
 
     private final SettingsService    settingsService = new SettingsService();
     private final DatabaseConnection dbConn          = new DatabaseConnection();
+    private final SettingsController controller;
 
     // ====== DB Config Fields ======
     private JTextField    hostField;
@@ -59,6 +61,7 @@ public class SettingsPanel extends JPanel {
 
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
+        this.controller = new SettingsController(settingsService);
 
         // Dùng MigLayout với wrap 1 (mỗi section xuống dòng)
         setLayout(new MigLayout("insets 20, wrap 1", "[grow, fill]", ""));
@@ -182,12 +185,14 @@ public class SettingsPanel extends JPanel {
                 setStatus(apiStatusLabel, "Vui lòng nhập API Key!", false);
                 return;
             }
-            try {
-                settingsService.setGeminiApiKey(key);
-                setStatus(apiStatusLabel, "Đã lưu API Key!", true);
-            } catch (Exception ex) {
-                setStatus(apiStatusLabel, ex.getMessage(), false);
-            }
+            controller.setGeminiApiKeyAsync(key)
+                .thenRun(() -> {
+                    setStatus(apiStatusLabel, "Đã lưu API Key!", true);
+                })
+                .exceptionally(ex -> {
+                    setStatus(apiStatusLabel, ex.getMessage(), false);
+                    return null;
+                });
         });
 
         return section;
@@ -215,17 +220,22 @@ public class SettingsPanel extends JPanel {
         section.add(saveCrawlBtn, "wrap");
 
         saveCrawlBtn.addActionListener(e -> {
-            try {
-                settingsService.setCrawlIntervalHours((Integer) crawlIntervalSpinner.getValue());
-                settingsService.setMaxSubmissionsPerCrawl((Integer) maxSubsSpinner.getValue());
-                JOptionPane.showMessageDialog(mainFrame,
-                    "Đã lưu cài đặt crawl!",
-                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame,
-                    "Lỗi: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+            int intervalHours = (Integer) crawlIntervalSpinner.getValue();
+            int maxSubs = (Integer) maxSubsSpinner.getValue();
+
+            controller.setCrawlIntervalHoursAsync(intervalHours)
+                .thenCompose(v -> controller.setMaxSubmissionsPerCrawlAsync(maxSubs))
+                .thenRun(() -> {
+                    JOptionPane.showMessageDialog(mainFrame,
+                        "Đã lưu cài đặt crawl!",
+                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                })
+                .exceptionally(ex -> {
+                    JOptionPane.showMessageDialog(mainFrame,
+                        "Lỗi: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return null;
+                });
         });
 
         return section;
@@ -246,10 +256,10 @@ public class SettingsPanel extends JPanel {
 
         // Gemini key + crawl settings (từ DB - có thể fail nếu chưa kết nối)
         try {
-            String key = settingsService.getGeminiApiKey();
+            String key = controller.getGeminiApiKey();
             apiKeyField.setText(key);
-            crawlIntervalSpinner.setValue(settingsService.getCrawlIntervalHours());
-            maxSubsSpinner.setValue(settingsService.getMaxSubmissionsPerCrawl());
+            crawlIntervalSpinner.setValue(controller.getCrawlIntervalHours());
+            maxSubsSpinner.setValue(controller.getMaxSubmissionsPerCrawl());
         } catch (Exception e) {
             // DB chưa kết nối → bỏ qua, dùng giá trị mặc định
         }

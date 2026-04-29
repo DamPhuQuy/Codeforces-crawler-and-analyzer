@@ -39,6 +39,7 @@ import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
+import com.cf.analysis.ui.controllers.SubmissionAnalysisController;
 import com.cf.analysis.ui.dialogs.SubmissionDetailDialog;
 
 import net.miginfocom.swing.MigLayout;
@@ -59,6 +60,7 @@ public class SubmissionAnalysisPanel extends JPanel {
     // ====== Services ======
     private final UserService userService;
     private final AnalysisService analysisService;
+    private final SubmissionAnalysisController controller;
 
     // ====== UI: Phần trái ======
     private JComboBox<String>  userComboBox;
@@ -97,6 +99,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         this.mainFrame = mainFrame;
         this.userService = userService;
         this.analysisService = analysisService;
+        this.controller = new SubmissionAnalysisController(userService, analysisService);
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
@@ -344,16 +347,17 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     /** Load danh sách nick vào ComboBox. */
     private void loadUserList() {
-        SwingWorker<List<User>, Void> worker = new SwingWorker<>() {
-            @Override protected List<User> doInBackground() throws Exception { return userService.getAllUsers(); }
-            @Override protected void done() {
-                try {
-                    userComboBox.removeAllItems();
-                    for (User u : get()) userComboBox.addItem(u.getHandle());
-                } catch (Exception ignored) {}
-            }
-        };
-        worker.execute();
+        controller.getAllUsersAsync()
+            .thenAccept(users -> {
+                userComboBox.removeAllItems();
+                for (User u : users) {
+                    userComboBox.addItem(u.getHandle());
+                }
+            })
+            .exceptionally(ex -> {
+                // Ignore errors silently for combo box loading
+                return null;
+            });
     }
 
     /** Tải submissions của một user vào bảng trái. */
@@ -362,33 +366,25 @@ public class SubmissionAnalysisPanel extends JPanel {
         currentSubmissions.clear();
         analyzeSelectedBtn.setEnabled(false);
 
-        SwingWorker<List<Submission>, Void> worker = new SwingWorker<>() {
-            @Override
-            protected List<Submission> doInBackground() throws Exception {
-                return analysisService.getSubmissionsByHandle(handle);
-            }
-            @Override
-            protected void done() {
-                try {
-                    List<Submission> subs = get();
-                    currentSubmissions = subs;
-                    for (int i = 0; i < subs.size(); i++) {
-                        Submission s = subs.get(i);
-                        submissionModel.addRow(new Object[]{
-                            i + 1,
-                            s.getProblemName(),
-                            s.getShortLanguage(),
-                            "OK".equals(s.getVerdict()) ? "AC" : s.getVerdict(),
-                            s.getSubmittedAt() != null ? sdf.format(s.getSubmittedAt()) : "",
-                            s.isAnalyzed() ? "[x]" : "[ ]"
-                        });
-                    }
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(mainFrame, "Lỗi tải submissions: " + ex.getMessage());
+        controller.getSubmissionsByHandleAsync(handle)
+            .thenAccept(subs -> {
+                currentSubmissions = subs;
+                for (int i = 0; i < subs.size(); i++) {
+                    Submission s = subs.get(i);
+                    submissionModel.addRow(new Object[]{
+                        i + 1,
+                        s.getProblemName(),
+                        s.getShortLanguage(),
+                        "OK".equals(s.getVerdict()) ? "AC" : s.getVerdict(),
+                        s.getSubmittedAt() != null ? sdf.format(s.getSubmittedAt()) : "",
+                        s.isAnalyzed() ? "[x]" : "[ ]"
+                    });
                 }
-            }
-        };
-        worker.execute();
+            })
+            .exceptionally(ex -> {
+                JOptionPane.showMessageDialog(mainFrame, "Lỗi tải submissions: " + ex.getMessage());
+                return null;
+            });
     }
 
     /** Hiển thị code và analysis khi chọn một row. */
@@ -408,19 +404,15 @@ public class SubmissionAnalysisPanel extends JPanel {
         codeArea.removeAllLineHighlights();
 
         // Load analysis (background vì query DB)
-        SwingWorker<Analysis, Void> worker = new SwingWorker<>() {
-            @Override protected Analysis doInBackground() throws Exception {
-                return analysisService.getAnalysis(sub.getId());
-            }
-            @Override protected void done() {
-                try {
-                    Analysis a = get();
-                    if (a != null) showAnalysis(a);
-                    else           clearAnalysis();
-                } catch (Exception ignored) { clearAnalysis(); }
-            }
-        };
-        worker.execute();
+        controller.getAnalysisAsync(sub.getId())
+            .thenAccept(a -> {
+                if (a != null) showAnalysis(a);
+                else           clearAnalysis();
+            })
+            .exceptionally(ex -> {
+                clearAnalysis();
+                return null;
+            });
     }
 
     /** Hiển thị kết quả AI phân tích và highlight code. */
@@ -512,27 +504,23 @@ public class SubmissionAnalysisPanel extends JPanel {
         analysisProgress.setIndeterminate(true);
         analysisProgress.setString("Đang phân tích...");
 
-        SwingWorker<Analysis, Void> worker = new SwingWorker<>() {
-            @Override protected Analysis doInBackground() throws Exception {
-                return analysisService.analyzeSubmission(sub.getId(), null);
-            }
-            @Override protected void done() {
-                try {
-                    Analysis a = get();
-                    showAnalysis(a);
-                    submissionModel.setValueAt("[x]", row, 5);
-                    currentSubmissions.get(row).setAnalyzed(true);
-                    mainFrame.refreshEvaluationPanel();
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(mainFrame, "Lỗi phân tích:\n" + ex.getMessage());
-                } finally {
-                    analyzeSelectedBtn.setEnabled(true);
-                    analysisProgress.setIndeterminate(false);
-                    analysisProgress.setString("");
-                }
-            }
-        };
-        worker.execute();
+        controller.analyzeSubmissionAsync(sub.getId(), null)
+            .thenAccept(a -> {
+                showAnalysis(a);
+                submissionModel.setValueAt("[x]", row, 5);
+                currentSubmissions.get(row).setAnalyzed(true);
+                mainFrame.refreshEvaluationPanel();
+                analyzeSelectedBtn.setEnabled(true);
+                analysisProgress.setIndeterminate(false);
+                analysisProgress.setString("");
+            })
+            .exceptionally(ex -> {
+                JOptionPane.showMessageDialog(mainFrame, "Lỗi phân tích:\n" + ex.getMessage());
+                analyzeSelectedBtn.setEnabled(true);
+                analysisProgress.setIndeterminate(false);
+                analysisProgress.setString("");
+                return null;
+            });
     }
 
     /** Phân tích tất cả submissions pending. */

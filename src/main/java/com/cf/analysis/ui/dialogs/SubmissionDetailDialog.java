@@ -41,7 +41,7 @@ import net.miginfocom.swing.MigLayout;
 public class SubmissionDetailDialog extends JDialog {
 
     private final Submission submission;
-    private final Analysis   analysis;
+    private final Analysis analysis;
 
     public SubmissionDetailDialog(JFrame parent, Submission submission, Analysis analysis) {
         super(parent, "Submission #" + submission.getSubmissionId() + " — " + submission.getProblemName(), false);

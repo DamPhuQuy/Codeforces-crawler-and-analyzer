@@ -74,10 +74,10 @@ public class MainFrame extends JFrame {
 
     private void initDatabase() {
         try {
-            DatabaseConnection db = new DatabaseConnection();
-            System.out.println("Database và migrations sẵn sàng!");
+            new DatabaseConnection();
+            System.out.println("Database da ket noi!");
         } catch (Exception e) {
-            System.err.println("Chưa kết nối được DB: " + e.getMessage());
+            System.err.println("Chua ket noi duoc database: " + e.getMessage());
         }
     }
 
@@ -111,12 +111,10 @@ public class MainFrame extends JFrame {
         header.setLayout(new MigLayout("insets 12 20 12 20", "[]push[]", "[]3[]"));
         header.setPreferredSize(new Dimension(0, 65));
 
-        // Tiêu đề
         JLabel titleLabel = new JLabel("Codeforces Examination Analysis");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 22));
         titleLabel.setForeground(Color.WHITE);
 
-        // Subtitle
         JLabel subLabel = new JLabel("Crawl - Phân Tích AI - Đánh Giá Năng Lực");
         subLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         subLabel.setForeground(new Color(180, 180, 180));
@@ -136,16 +134,12 @@ public class MainFrame extends JFrame {
         return header;
     }
 
-    /**
-     * Tạo JTabbedPane với 5 tabs.
-     * Mỗi tab = 1 Panel riêng biệt.
-     */
     private JTabbedPane buildTabbedPane() {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setTabPlacement(JTabbedPane.LEFT);
         tabs.setFont(new Font("Arial", Font.PLAIN, 13));
 
-        // Khởi tạo Database và Services
+        // database init
         DatabaseConnection db = new DatabaseConnection();
         Gson gson = new Gson();
         OkHttpClient httpClient = new OkHttpClient();
@@ -156,17 +150,15 @@ public class MainFrame extends JFrame {
         AnalysisDAO analysisDAO = new AnalysisDAO(db, gson);
         UserScoreDAO userScoreDAO = new UserScoreDAO(db);
 
-        // API Client
+        // api
         CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
 
-        // Services
         SettingsService settingsService = new SettingsService();
         UserService userService = new UserService(userDAO, cfClient);
         CrawlService crawlService = new CrawlService(userDAO, submissionDAO, cfClient, settingsService);
         AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, settingsService);
         EvaluationService evaluationService = new EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
 
-        // Khởi tạo 5 panels
         userManagementPanel     = new UserManagementPanel(this, userService);
         crawlMonitorPanel       = new CrawlMonitorPanel(this, crawlService, settingsService);
         submissionAnalysisPanel = new SubmissionAnalysisPanel(this, userService, analysisService);
@@ -175,7 +167,7 @@ public class MainFrame extends JFrame {
 
         // Thêm vào tabs
         tabs.addTab("  Quản Lý Nick  ", userManagementPanel);
-        tabs.addTab("  Crawl Monitor ", crawlMonitorPanel);
+        tabs.addTab("  Crawl ", crawlMonitorPanel);
         tabs.addTab("  Phân Tích     ", submissionAnalysisPanel);
         tabs.addTab("  Đánh Giá      ", evaluationPanel);
         tabs.addTab("  Cài Đặt       ", settingsPanel);
@@ -183,9 +175,6 @@ public class MainFrame extends JFrame {
         return tabs;
     }
 
-    /**
-     * Tạo status bar ở dưới cùng.
-     */
     private JPanel buildStatusBar() {
         JPanel statusBar = new JPanel(new BorderLayout());
         statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
@@ -198,31 +187,24 @@ public class MainFrame extends JFrame {
         return statusBar;
     }
 
-    // ==================== Refresh Methods ====================
-    // Các panel có thể gọi để trigger reload ở panel khác.
-
-    /** Gọi sau khi crawl xong để reload danh sách submissions. */
     public void refreshSubmissionPanel() {
         if (submissionAnalysisPanel != null) {
             submissionAnalysisPanel.refreshData();
         }
     }
 
-    /** Gọi sau khi có phân tích mới để tính lại điểm. */
     public void refreshEvaluationPanel() {
         if (evaluationPanel != null) {
             evaluationPanel.refreshData();
         }
     }
 
-    /** Gọi sau khi thêm/xóa user để reload bảng. */
     public void refreshUserPanel() {
         if (userManagementPanel != null) {
             userManagementPanel.refreshData();
         }
     }
 
-    /** Cập nhật text status bar. */
     public void setStatus(String status) {
         if (statusBarLabel != null) {
             statusBarLabel.setText("  " + status);

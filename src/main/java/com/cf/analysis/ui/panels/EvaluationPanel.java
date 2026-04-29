@@ -21,30 +21,24 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 import com.cf.analysis.bll.EvaluationService;
 import com.cf.analysis.model.user.UserScore;
 import com.cf.analysis.ui.MainFrame;
+import com.cf.analysis.ui.controllers.EvaluationController;
 
 import net.miginfocom.swing.MigLayout;
 
-/**
- * Panel Tab 4: 📊 Đánh Giá Người Dùng.
- *
- * Hiển thị:
- * - Bảng xếp hạng tất cả users với điểm tổng hợp
- * - Radar chart (Java2D) khi chọn user
- * - Badge và level, thống kê chi tiết
- */
 public class EvaluationPanel extends JPanel {
 
     private final EvaluationService evaluationService;
+    private final EvaluationController controller;
 
      public EvaluationPanel(MainFrame mainFrame, EvaluationService evaluationService) {
         this.evaluationService = evaluationService;
+        this.controller = new EvaluationController(evaluationService);
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -172,36 +166,31 @@ public class EvaluationPanel extends JPanel {
     public void loadData() {
         refreshBtn.setEnabled(false);
 
-        SwingWorker<List<UserScore>, Void> worker = new SwingWorker<>() {
-            @Override protected List<UserScore> doInBackground() throws Exception {
-                return evaluationService.getRanking();
-            }
-            @Override protected void done() {
-                try {
-                    scores = get();
-                    rankModel.setRowCount(0);
-                    for (int i = 0; i < scores.size(); i++) {
-                        UserScore s = scores.get(i);
-                        rankModel.addRow(new Object[]{
-                            i + 1,
-                            s.getHandle(),
-                            String.format("%.0f", s.getDsScore()),
-                            String.format("%.0f", s.getAlgorithmScore()),
-                            String.format("%.0f", s.getAiScore()),
-                            String.format("%.1f", s.getOverallScore()),
-                            s.getLevel().name(),
-                            s.getBadge(),
-                            String.format("%.0f%%", s.getAiUsageRate() * 100)
-                        });
-                    }
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(mainFrame, "Lỗi tải bảng xếp hạng: " + ex.getMessage());
-                } finally {
-                    refreshBtn.setEnabled(true);
+        controller.getRankingAsync()
+            .thenAccept(userScores -> {
+                scores = userScores;
+                rankModel.setRowCount(0);
+                for (int i = 0; i < scores.size(); i++) {
+                    UserScore s = scores.get(i);
+                    rankModel.addRow(new Object[]{
+                        i + 1,
+                        s.getHandle(),
+                        String.format("%.0f", s.getDsScore()),
+                        String.format("%.0f", s.getAlgorithmScore()),
+                        String.format("%.0f", s.getAiScore()),
+                        String.format("%.1f", s.getOverallScore()),
+                        s.getLevel().name(),
+                        s.getBadge(),
+                        String.format("%.0f%%", s.getAiUsageRate() * 100)
+                    });
                 }
-            }
-        };
-        worker.execute();
+                refreshBtn.setEnabled(true);
+            })
+            .exceptionally(ex -> {
+                JOptionPane.showMessageDialog(mainFrame, "Lỗi tải bảng xếp hạng: " + ex.getMessage());
+                refreshBtn.setEnabled(true);
+                return null;
+            });
     }
 
     private void showUserDetail(UserScore score) {

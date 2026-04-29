@@ -29,64 +29,39 @@ import com.cf.analysis.ui.dialogs.AddUserDialog;
 import net.miginfocom.swing.MigLayout;
 
 /**
- * Panel Tab 1: 👥 Quản Lý Nick Codeforces.
- *
- * Chức năng:
- * - Hiển thị bảng danh sách tất cả nick đã thêm
- * - Thêm nick mới (qua AddUserDialog)
- * - Xóa nick đã chọn (có confirm dialog)
- * - Cập nhật rating mới nhất từ Codeforces
- *
- * Cấu trúc class (cho người mới học Swing):
- * - Constructor: gọi initComponents() và loadData()
- * - initComponents(): tạo toolbar và bảng
- * - loadData(): lấy data từ DB và đưa vào bảng (dùng SwingWorker)
- * - refreshData(): public, để MainFrame gọi khi cần reload
+
  */
 public class UserManagementPanel extends JPanel {
 
-    // ====== BLL (Business Logic Layer) ======
-    // Panel chỉ gọi Service, không gọi DAO trực tiếp
     private final UserService userService;
 
-    // ====== UI Components ======
-    private JTable            userTable;
+    private JTable userTable;
     private DefaultTableModel tableModel;
-    private JButton           addButton;
-    private JButton           deleteButton;
-    private JButton           refreshRatingBtn;
-    private JLabel            statusLabel;
+    private JButton addButton;
+    private JButton deleteButton;
+    private JButton refreshRatingBtn;
+    private JLabel statusLabel;
 
-    // Tên cột của bảng
     private static final String[] COLUMNS = {
         "Handle", "Tên hiển thị", "Rating", "Max Rating", "Rank", "Quốc gia", "Thêm lúc", "Crawl gần nhất"
     };
 
-    private final MainFrame         mainFrame;
-    private final SimpleDateFormat  sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-
-    // ==================== Constructor ====================
+    private final MainFrame mainFrame;
+    private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
     public UserManagementPanel(MainFrame mainFrame, UserService userService) {
         this.mainFrame = mainFrame;
         this.userService = userService;
 
-        // Layout toàn bộ panel
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
-        // Tạo UI components
         initComponents();
 
-        // Tải dữ liệu lần đầu
         loadData();
     }
 
-    // ==================== Build UI ====================
 
-    /**
-     * Tạo tất cả UI components và thêm vào panel.
-     */
     private void initComponents() {
         add(buildToolbar(), BorderLayout.NORTH);
         add(buildTable(),   BorderLayout.CENTER);
@@ -98,13 +73,9 @@ public class UserManagementPanel extends JPanel {
         add(statusLabel, BorderLayout.SOUTH);
     }
 
-    /**
-     * Tạo toolbar với 3 nút: Thêm, Xóa, Refresh Rating.
-     */
     private JPanel buildToolbar() {
         JPanel toolbar = new JPanel(new MigLayout("insets 0", "[][]15[]push", ""));
 
-        // ---- Nút Thêm Nick ----
         addButton = new JButton("Thêm Nick");
         addButton.setFont(new Font("Arial", Font.BOLD, 13));
         addButton.setBackground(new Color(80, 80, 80));
@@ -112,7 +83,6 @@ public class UserManagementPanel extends JPanel {
         addButton.setFocusPainted(false);
         addButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // ---- Nút Xóa Nick ----
         deleteButton = new JButton("Xóa Nick");
         deleteButton.setFont(new Font("Arial", Font.PLAIN, 13));
         deleteButton.setBackground(new Color(120, 120, 120));
@@ -121,7 +91,6 @@ public class UserManagementPanel extends JPanel {
         deleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         deleteButton.setEnabled(false); // Tắt cho đến khi chọn row
 
-        // ---- Nút Refresh Rating ----
         refreshRatingBtn = new JButton("Cập Nhật Rating");
         refreshRatingBtn.setFont(new Font("Arial", Font.PLAIN, 13));
         refreshRatingBtn.setFocusPainted(false);
@@ -132,9 +101,7 @@ public class UserManagementPanel extends JPanel {
         toolbar.add(deleteButton);
         toolbar.add(refreshRatingBtn);
 
-        // ====== Gắn sự kiện (Event Listeners) ======
 
-        // Nút Thêm: mở AddUserDialog, sau đó reload nếu thành công
         addButton.addActionListener(e -> {
             AddUserDialog dialog = new AddUserDialog(mainFrame, userService);
             dialog.setVisible(true); // Blocking (modal dialog)
@@ -144,35 +111,23 @@ public class UserManagementPanel extends JPanel {
             }
         });
 
-        // Nút Xóa: confirm rồi xóa
         deleteButton.addActionListener(e -> handleDelete());
 
-        // Nút Refresh Rating: cập nhật rating từ CF API
         refreshRatingBtn.addActionListener(e -> handleRefreshRating());
 
         return toolbar;
     }
 
-    /**
-     * Tạo JTable để hiển thị danh sách users.
-     *
-     * Ghi chú cho người mới:
-     * - DefaultTableModel: class mặc định của Swing để quản lý data trong JTable
-     * - Mỗi row = một Object[]
-     * - isCellEditable=false: không cho user chỉnh sửa trực tiếp trên bảng
-     */
     private JScrollPane buildTable() {
-        // Tạo model với tên cột
         tableModel = new DefaultTableModel(COLUMNS, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Không cho sửa trực tiếp
+                return false;
             }
         };
 
         userTable = new JTable(tableModel);
 
-        // Cài đặt cơ bản
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         userTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         userTable.getTableHeader().setReorderingAllowed(false);
@@ -180,23 +135,19 @@ public class UserManagementPanel extends JPanel {
         userTable.setShowGrid(false);
         userTable.setIntercellSpacing(new Dimension(0, 2));
 
-        // Căn giữa cột số
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         userTable.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); // Rating
         userTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer); // Max Rating
 
-        // Màu sắc cho cột Rank (theo màu CF)
         userTable.getColumnModel().getColumn(4).setCellRenderer(new RankColorRenderer());
 
-        // Gắn sự kiện chọn row
         userTable.getSelectionModel().addListSelectionListener(e -> {
             boolean hasSelection = userTable.getSelectedRow() != -1;
             deleteButton.setEnabled(hasSelection);
             refreshRatingBtn.setEnabled(hasSelection);
         });
 
-        // Double click → Refresh rating của nick đó
         userTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -209,11 +160,6 @@ public class UserManagementPanel extends JPanel {
         return scroll;
     }
 
-    // ==================== Actions ====================
-
-    /**
-     * Xử lý xóa nick đang chọn.
-     */
     private void handleDelete() {
         int row = userTable.getSelectedRow();
         if (row == -1) return;
@@ -243,10 +189,6 @@ public class UserManagementPanel extends JPanel {
         }
     }
 
-    /**
-     * Cập nhật rating mới nhất từ Codeforces cho nick đang chọn.
-     * Dùng SwingWorker vì gọi API mất thời gian.
-     */
     private void handleRefreshRating() {
         int row = userTable.getSelectedRow();
         if (row == -1) return;
@@ -255,7 +197,6 @@ public class UserManagementPanel extends JPanel {
         refreshRatingBtn.setEnabled(false);
         setStatus("Đang cập nhật rating của " + handle + "...");
 
-        // SwingWorker: doInBackground chạy trên thread riêng, done() chạy trên EDT
         SwingWorker<User, Void> worker = new SwingWorker<>() {
             @Override
             protected User doInBackground() throws Exception {
@@ -279,12 +220,6 @@ public class UserManagementPanel extends JPanel {
         worker.execute();
     }
 
-    // ==================== Data Loading ====================
-
-    /**
-     * Tải dữ liệu từ DB vào bảng.
-     * Dùng SwingWorker để không block UI khi đọc DB.
-     */
     public void loadData() {
         SwingWorker<List<User>, Void> worker = new SwingWorker<>() {
             @Override
@@ -297,10 +232,8 @@ public class UserManagementPanel extends JPanel {
                 try {
                     List<User> users = get();
 
-                    // Xóa hết data cũ trong bảng
                     tableModel.setRowCount(0);
 
-                    // Thêm từng user vào bảng
                     for (User u : users) {
                         tableModel.addRow(new Object[]{
                             u.getHandle(),
@@ -324,7 +257,6 @@ public class UserManagementPanel extends JPanel {
         worker.execute();
     }
 
-    /** Public: để MainFrame gọi khi cần reload. */
     public void refreshData() {
         loadData();
     }
@@ -333,12 +265,6 @@ public class UserManagementPanel extends JPanel {
         statusLabel.setText(msg);
     }
 
-    // ==================== Custom Cell Renderers ====================
-
-    /**
-     * Custom renderer cho cột Rank: tô màu theo màu rating của Codeforces.
-     * Người mới học Swing: Renderer là class xác định "dòng này trông như thế nào".
-     */
     private static class RankColorRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(

@@ -76,7 +76,6 @@ public class EvaluationService {
         int totalSubs = submissionDAO.countByHandle(handle);
 
         UserScore score = new UserScore(handle);
-        score.setDisplayName(user.getDisplayName());
         score.setRating(user.getRating());
         score.setTotalSubmissions(totalSubs);
         score.setAnalyzedSubmissions(analyses.size());

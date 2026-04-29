@@ -1,5 +1,7 @@
 package com.cf.analysis.model.user;
 
+import java.time.LocalDateTime;
+
 /**
  * Model tổng hợp điểm đánh giá năng lực của một user.
  * Được tính toán từ tất cả analyses của user đó trong EvaluationService.
@@ -7,7 +9,6 @@ package com.cf.analysis.model.user;
 public class UserScore {
 
     private String handle;
-    private String displayName = "";
     private int rating = 0;
 
     private double dsScore = 0.0;
@@ -23,6 +24,9 @@ public class UserScore {
     private Level level = Level.BEGINNER;
     private String topDataStructure = "";
     private String topAlgorithm = "";
+
+    private LocalDateTime lastEvaluatedAt;
+    private LocalDateTime createdAt;
 
     public UserScore() {}
 
@@ -52,14 +56,6 @@ public class UserScore {
 
     public String getHandle() {
         return handle;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
     }
 
     public int getRating() {
@@ -158,5 +154,19 @@ public class UserScore {
         this.topAlgorithm = topAlgorithm;
     }
 
+    public LocalDateTime getLastEvaluatedAt() {
+        return lastEvaluatedAt;
+    }
 
+    public void setLastEvaluatedAt(LocalDateTime lastEvaluatedAt) {
+        this.lastEvaluatedAt = lastEvaluatedAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

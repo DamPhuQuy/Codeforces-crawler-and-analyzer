@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS user_scores (
     handle              VARCHAR(50) PRIMARY KEY
                             REFERENCES users(handle)
                             ON DELETE CASCADE,
-
-    display_name        VARCHAR(100) DEFAULT '',
     rating              INTEGER NOT NULL DEFAULT 0,
 
     ds_score            DOUBLE PRECISION NOT NULL DEFAULT 0.0

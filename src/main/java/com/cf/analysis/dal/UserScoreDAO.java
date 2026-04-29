@@ -23,14 +23,13 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
     public void insert(UserScore score) throws SQLException {
         String sql = """
             INSERT INTO user_scores (
-                handle, display_name, rating,
+                handle, rating,
                 ds_score, algorithm_score, ai_score, overall_score,
                 total_submissions, analyzed_submissions, ai_detected_count, ai_usage_rate,
                 level, top_data_structure, top_algorithm,
                 last_evaluated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::VARCHAR, ?, ?, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::VARCHAR, ?, ?, NOW())
             ON CONFLICT (handle) DO UPDATE SET
-                display_name = EXCLUDED.display_name,
                 rating = EXCLUDED.rating,
                 ds_score = EXCLUDED.ds_score,
                 algorithm_score = EXCLUDED.algorithm_score,
@@ -48,19 +47,18 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
             ps.setString(1, score.getHandle());
-            ps.setString(2, score.getDisplayName());
-            ps.setInt(3, score.getRating());
-            ps.setDouble(4, score.getDsScore());
-            ps.setDouble(5, score.getAlgorithmScore());
-            ps.setDouble(6, score.getAiScore());
-            ps.setDouble(7, score.getOverallScore());
-            ps.setInt(8, score.getTotalSubmissions());
-            ps.setInt(9, score.getAnalyzedSubmissions());
-            ps.setInt(10, score.getAiDetectedCount());
-            ps.setDouble(11, score.getAiUsageRate());
-            ps.setString(12, score.getLevel().name());
-            ps.setString(13, score.getTopDataStructure());
-            ps.setString(14, score.getTopAlgorithm());
+            ps.setInt(2, score.getRating());
+            ps.setDouble(3, score.getDsScore());
+            ps.setDouble(4, score.getAlgorithmScore());
+            ps.setDouble(5, score.getAiScore());
+            ps.setDouble(6, score.getOverallScore());
+            ps.setInt(7, score.getTotalSubmissions());
+            ps.setInt(8, score.getAnalyzedSubmissions());
+            ps.setInt(9, score.getAiDetectedCount());
+            ps.setDouble(10, score.getAiUsageRate());
+            ps.setString(11, score.getLevel().name());
+            ps.setString(12, score.getTopDataStructure());
+            ps.setString(13, score.getTopAlgorithm());
             ps.executeUpdate();
         }
     }
@@ -72,7 +70,7 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
 
     public UserScore findByHandle(String handle) throws SQLException {
         String sql = """
-            SELECT handle, display_name, rating, ds_score, algorithm_score, ai_score, overall_score,
+            SELECT handle, rating, ds_score, algorithm_score, ai_score, overall_score,
                    total_submissions, analyzed_submissions, ai_detected_count, ai_usage_rate,
                    level, top_data_structure, top_algorithm
             FROM user_scores WHERE handle = ?
@@ -88,7 +86,7 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
 
     public List<UserScore> findAll() throws SQLException {
         String sql = """
-            SELECT handle, display_name, rating, ds_score, algorithm_score, ai_score, overall_score,
+            SELECT handle, rating, ds_score, algorithm_score, ai_score, overall_score,
                    total_submissions, analyzed_submissions, ai_detected_count, ai_usage_rate,
                    level, top_data_structure, top_algorithm
             FROM user_scores ORDER BY overall_score DESC
@@ -116,7 +114,6 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
 
     private UserScore mapRow(ResultSet rs) throws SQLException {
         UserScore score = new UserScore(rs.getString("handle"));
-        score.setDisplayName(rs.getString("display_name"));
         score.setRating(rs.getInt("rating"));
         score.setDsScore(rs.getDouble("ds_score"));
         score.setAlgorithmScore(rs.getDouble("algorithm_score"));

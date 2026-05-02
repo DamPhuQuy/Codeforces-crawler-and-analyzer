@@ -22,9 +22,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class CodeforcesApiCaller {
-    private static final ThreadLocal<RateLimiter> rateLimiter = ThreadLocal.withInitial(() ->
-            RateLimiter.create(0.8)
-    );
+    private static final RateLimiter rateLimiter = RateLimiter.create(0.8);
 
     private final OkHttpClient httpClient;
     private final Gson gson;
@@ -50,7 +48,7 @@ public class CodeforcesApiCaller {
     public List<User> getUserInfo(List<String> handles) throws IOException {
         if (handles == null || handles.isEmpty()) return List.of();
 
-        rateLimiter.get().acquire();
+        rateLimiter.acquire();
 
         String queryMethod = "user.info";
 
@@ -107,7 +105,7 @@ public class CodeforcesApiCaller {
     public List<Submission> getUserSubmissions(String handle, int maxCount, long minSubId)
             throws IOException {
 
-        rateLimiter.get().acquire();
+        rateLimiter.acquire();
 
         try {
             String method = "user.status";
@@ -129,6 +127,10 @@ public class CodeforcesApiCaller {
             JsonArray items = response.getAsJsonArray("result");
 
             for (JsonElement element : items) {
+                if (results.size() >= maxCount) {
+                    break;
+                }
+
                 JsonObject s = element.getAsJsonObject();
                 int subId = s.get("id").getAsInt();
 

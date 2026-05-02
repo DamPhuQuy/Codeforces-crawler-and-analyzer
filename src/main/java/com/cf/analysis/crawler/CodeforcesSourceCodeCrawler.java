@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import com.cf.analysis.model.submission.Submission;
 import com.google.common.util.concurrent.RateLimiter;
@@ -18,42 +14,39 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 
 public class CodeforcesSourceCodeCrawler {
-    private static final ThreadLocal<RateLimiter> rateLimiter = ThreadLocal.withInitial(() ->
-            RateLimiter.create(0.5)
-    );
-    private static final int THREAD_POOL_SIZE = 5;
+    private static final RateLimiter rateLimiter = RateLimiter.create(0.33);
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 2000;
-    private static final int PAGE_TIMEOUT_MS = 15000;
+    private static final int PAGE_TIMEOUT_MS = 30000;
+    private static final int SELECTOR_TIMEOUT_MS = 20000;
 
     private final CodeforcesApiCaller apiCaller;
     private Playwright playwright;
     private Browser browser;
-    private ExecutorService executorService;
 
     public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller) {
         this.apiCaller = apiCaller;
     }
 
     public void saveLoginSession() {
-        try (Playwright pw = Playwright.create()) {
-            Browser br = pw.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(false)
-                    .setArgs(List.of("--disable-blink-features=AutomationControlled")));
-            BrowserContext ctx = br.newContext();
-            Page page = ctx.newPage();
+        Playwright pw = Playwright.create();
+        Browser br = pw.chromium().launch(new BrowserType.LaunchOptions()
+                .setHeadless(false)
+                .setArgs(List.of("--disable-blink-features=AutomationControlled")));
+        BrowserContext ctx = br.newContext();
+        Page page = ctx.newPage();
 
-            page.navigate("https://codeforces.com/enter", new Page.NavigateOptions()
-                    .setTimeout(PAGE_TIMEOUT_MS));
-            System.out.println("Hãy đăng nhập thủ công và vượt Captcha...");
+        page.navigate("https://codeforces.com/enter", new Page.NavigateOptions()
+                .setTimeout(PAGE_TIMEOUT_MS));
+        System.out.println("Hãy đăng nhập thủ công và vượt Captcha...");
 
-            page.waitForURL("https://codeforces.com/", new Page.WaitForURLOptions().setTimeout(60000));
+        page.waitForURL("https://codeforces.com/", new Page.WaitForURLOptions().setTimeout(60000));
 
-            ctx.storageState(new BrowserContext.StorageStateOptions().setPath(Paths.get("state.json")));
-            System.out.println("Đã lưu phiên đăng nhập vào file state.json!");
+        ctx.storageState(new BrowserContext.StorageStateOptions().setPath(Paths.get("state.json")));
+        System.out.println("Đã lưu phiên đăng nhập vào file state.json!");
 
-            br.close();
-        }
+        br.close();
+        pw.close();
     }
 
     public void initBrowser() {
@@ -65,34 +58,28 @@ public class CodeforcesSourceCodeCrawler {
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(false)
                 .setArgs(List.of("--disable-blink-features=AutomationControlled")));
-        executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-        System.out.println("Browser initialized with " + THREAD_POOL_SIZE + " threads (per-thread rate limiting)");
+        System.out.println("Browser initialized (sequential mode with rate limiting)");
     }
 
     public void closeBrowser() {
-        if (executorService != null) {
-            executorService.shutdown();
+        if (browser != null) {
             try {
-                if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executorService.shutdownNow();
-                Thread.currentThread().interrupt();
+                browser.close();
+            } catch (Exception e) {
+                System.err.println("Error closing browser: " + e.getMessage());
             }
         }
-
-        if (browser != null) {
-            browser.close();
-        }
         if (playwright != null) {
-            playwright.close();
+            try {
+                playwright.close();
+            } catch (Exception e) {
+                System.err.println("Error closing playwright: " + e.getMessage());
+            }
         }
 
         playwright = null;
         browser = null;
-        executorService = null;
 
         System.out.println("Browser closed");
     }
@@ -104,27 +91,16 @@ public class CodeforcesSourceCodeCrawler {
             List<Submission> submissions = apiCaller.getUserSubmissions(handle, maxCount, minSubId);
             System.out.println("Found " + submissions.size() + " accepted submissions for " + handle);
 
-            List<CompletableFuture<SubmissionSourceCode>> futures = new ArrayList<>();
-
-            for (Submission sub : submissions) {
-                CompletableFuture<SubmissionSourceCode> future = CompletableFuture.supplyAsync(
-                        () -> crawlSubmissionWithRetry(sub),
-                        executorService
-                );
-                futures.add(future);
-            }
-
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
             List<SubmissionSourceCode> results = new ArrayList<>();
-            for (CompletableFuture<SubmissionSourceCode> future : futures) {
-                try {
-                    SubmissionSourceCode result = future.get();
-                    if (result != null && result.sourceCode != null) {
-                        results.add(result);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error getting future result: " + e.getMessage());
+
+            for (int i = 0; i < submissions.size(); i++) {
+                Submission sub = submissions.get(i);
+                System.out.println("Processing submission " + (i + 1) + "/" + submissions.size() + " (ID: " + sub.getId() + ")");
+
+                SubmissionSourceCode result = crawlSubmissionWithRetry(sub);
+                if (result != null && result.sourceCode != null) {
+                    System.err.println(result.sourceCode);
+                    results.add(result);
                 }
             }
 
@@ -140,7 +116,7 @@ public class CodeforcesSourceCodeCrawler {
     private SubmissionSourceCode crawlSubmissionWithRetry(Submission submission) {
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                rateLimiter.get().acquire();
+                rateLimiter.acquire();
                 return crawlSingleSubmission(submission);
             } catch (Exception e) {
                 System.err.println("Attempt " + attempt + "/" + MAX_RETRIES + " failed for submission "
@@ -160,28 +136,43 @@ public class CodeforcesSourceCodeCrawler {
     }
 
     private SubmissionSourceCode crawlSingleSubmission(Submission submission) {
-        // Create a new context for each thread (thread-safe)
-        BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                .setStorageStatePath(Paths.get("state.json")));
-        Page page = context.newPage();
+        BrowserContext context = null;
+        Page page = null;
 
         try {
+            context = browser.newContext(new Browser.NewContextOptions()
+                    .setStorageStatePath(Paths.get("state.json")));
+            page = context.newPage();
+
             String url = buildSubmissionUrl(submission);
             page.navigate(url, new Page.NavigateOptions()
                     .setTimeout(PAGE_TIMEOUT_MS));
 
-            page.waitForSelector("#program-source-text", new Page.WaitForSelectorOptions().setTimeout(10000));
+            page.waitForSelector("#program-source-text", new Page.WaitForSelectorOptions()
+                    .setTimeout(SELECTOR_TIMEOUT_MS));
             String sourceCode = page.locator("#program-source-text").innerText();
 
-            System.out.println("Crawled submission " + submission.getId());
+            System.out.println("✓ Crawled submission " + submission.getId());
             return new SubmissionSourceCode(submission, sourceCode);
 
         } catch (Exception e) {
-            System.err.println("Failed to crawl submission " + submission.getId() + ": " + e.getMessage());
+            System.err.println("✗ Failed to crawl submission " + submission.getId() + ": " + e.getMessage());
             return null;
         } finally {
-            page.close();
-            context.close();
+            if (page != null) {
+                try {
+                    page.close();
+                } catch (Exception e) {
+                    // Ignore close errors
+                }
+            }
+            if (context != null) {
+                try {
+                    context.close();
+                } catch (Exception e) {
+                    // Ignore close errors
+                }
+            }
         }
     }
 

@@ -18,15 +18,17 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 
 public class CodeforcesSourceCodeCrawler {
-    private static final RateLimiter rateLimiter = RateLimiter.create(0.4);
+    private static final ThreadLocal<RateLimiter> rateLimiter = ThreadLocal.withInitial(() ->
+            RateLimiter.create(0.5)
+    );
     private static final int THREAD_POOL_SIZE = 5;
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 2000;
+    private static final int PAGE_TIMEOUT_MS = 15000;
 
     private final CodeforcesApiCaller apiCaller;
     private Playwright playwright;
     private Browser browser;
-    private BrowserContext context;
     private ExecutorService executorService;
 
     public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller) {
@@ -41,7 +43,8 @@ public class CodeforcesSourceCodeCrawler {
             BrowserContext ctx = br.newContext();
             Page page = ctx.newPage();
 
-            page.navigate("https://codeforces.com/enter");
+            page.navigate("https://codeforces.com/enter", new Page.NavigateOptions()
+                    .setTimeout(PAGE_TIMEOUT_MS));
             System.out.println("Hãy đăng nhập thủ công và vượt Captcha...");
 
             page.waitForURL("https://codeforces.com/", new Page.WaitForURLOptions().setTimeout(60000));
@@ -62,11 +65,9 @@ public class CodeforcesSourceCodeCrawler {
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(false)
                 .setArgs(List.of("--disable-blink-features=AutomationControlled")));
-        context = browser.newContext(new Browser.NewContextOptions()
-                .setStorageStatePath(Paths.get("state.json")));
         executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-        System.out.println("Browser initialized with " + THREAD_POOL_SIZE + " threads");
+        System.out.println("Browser initialized with " + THREAD_POOL_SIZE + " threads (per-thread rate limiting)");
     }
 
     public void closeBrowser() {
@@ -82,9 +83,6 @@ public class CodeforcesSourceCodeCrawler {
             }
         }
 
-        if (context != null) {
-            context.close();
-        }
         if (browser != null) {
             browser.close();
         }
@@ -94,7 +92,6 @@ public class CodeforcesSourceCodeCrawler {
 
         playwright = null;
         browser = null;
-        context = null;
         executorService = null;
 
         System.out.println("Browser closed");
@@ -143,7 +140,7 @@ public class CodeforcesSourceCodeCrawler {
     private SubmissionSourceCode crawlSubmissionWithRetry(Submission submission) {
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                rateLimiter.acquire();
+                rateLimiter.get().acquire();
                 return crawlSingleSubmission(submission);
             } catch (Exception e) {
                 System.err.println("Attempt " + attempt + "/" + MAX_RETRIES + " failed for submission "
@@ -163,22 +160,28 @@ public class CodeforcesSourceCodeCrawler {
     }
 
     private SubmissionSourceCode crawlSingleSubmission(Submission submission) {
+        // Create a new context for each thread (thread-safe)
+        BrowserContext context = browser.newContext(new Browser.NewContextOptions()
+                .setStorageStatePath(Paths.get("state.json")));
         Page page = context.newPage();
+
         try {
             String url = buildSubmissionUrl(submission);
-            page.navigate(url);
+            page.navigate(url, new Page.NavigateOptions()
+                    .setTimeout(PAGE_TIMEOUT_MS));
 
             page.waitForSelector("#program-source-text", new Page.WaitForSelectorOptions().setTimeout(10000));
             String sourceCode = page.locator("#program-source-text").innerText();
 
-            System.out.println("✓ Crawled submission " + submission.getId());
+            System.out.println("Crawled submission " + submission.getId());
             return new SubmissionSourceCode(submission, sourceCode);
 
         } catch (Exception e) {
-            System.err.println("✗ Failed to crawl submission " + submission.getId() + ": " + e.getMessage());
+            System.err.println("Failed to crawl submission " + submission.getId() + ": " + e.getMessage());
             return null;
         } finally {
             page.close();
+            context.close();
         }
     }
 

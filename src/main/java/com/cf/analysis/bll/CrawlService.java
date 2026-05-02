@@ -37,7 +37,7 @@ public class CrawlService {
 
     // Scheduler cho crawl định kỳ
     private ScheduledExecutorService scheduler;
-    private ScheduledFuture<?>       scheduledTask;
+    private ScheduledFuture<?> scheduledTask;
 
     // Flag: đang crawl hay không
     private volatile boolean crawling = false;
@@ -121,10 +121,10 @@ public class CrawlService {
             long maxExistingId = submissionDAO.getMaxSubmissionId(handle);
             int  maxCount      = settings.getMaxSubmissionsPerCrawl();
 
-            // Crawl song song với browser đã khởi tạo
+            // Crawl tuần tự với browser đã khởi tạo
             List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, maxExistingId);
 
-            log(logCallback, "  -> Crawled " + results.size() + " submissions (parallel)");
+            log(logCallback, "  -> Crawled " + results.size() + " submissions (sequential)");
 
             // Lưu vào DB
             for (SubmissionSourceCode result : results) {

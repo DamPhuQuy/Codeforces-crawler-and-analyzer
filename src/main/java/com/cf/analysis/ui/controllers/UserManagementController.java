@@ -21,7 +21,7 @@ public class UserManagementController {
     /**
      * Lấy danh sách tất cả users (async).
      */
-    public CompletableFuture<List<User>> getAllUsersAsync() {
+    public CompletableFuture<List<User>> getAllUsers() {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return userService.getAllUsers();
@@ -34,7 +34,7 @@ public class UserManagementController {
     /**
      * Thêm user mới (async).
      */
-    public CompletableFuture<User> addUserAsync(String handle) {
+    public CompletableFuture<User> addUser(String handle) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return userService.addUser(handle);
@@ -47,7 +47,7 @@ public class UserManagementController {
     /**
      * Xóa user (async).
      */
-    public CompletableFuture<Void> removeUserAsync(String handle) {
+    public CompletableFuture<Void> removeUser(String handle) {
         return CompletableFuture.runAsync(() -> {
             try {
                 userService.removeUser(handle);
@@ -60,7 +60,7 @@ public class UserManagementController {
     /**
      * Cập nhật rating của user từ Codeforces API (async).
      */
-    public CompletableFuture<User> refreshUserInfoAsync(String handle) {
+    public CompletableFuture<User> refreshUserInfo(String handle) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return userService.refreshUserInfo(handle);

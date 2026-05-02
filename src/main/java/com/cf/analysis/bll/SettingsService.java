@@ -11,10 +11,10 @@ import com.cf.analysis.dal.SettingsDAO;
 public class SettingsService {
 
     // Tên các key trong bảng settings
-    public static final String KEY_GEMINI_API     = "gemini_api_key";
+    public static final String KEY_GEMINI_API = "gemini_api_key";
     public static final String KEY_CRAWL_INTERVAL = "crawl_interval_hours";
-    public static final String KEY_MAX_SUBS       = "max_submissions_per_crawl";
-    public static final String KEY_ACCEPTED_ONLY  = "crawl_accepted_only";
+    public static final String KEY_MAX_SUBS = "max_submissions_per_crawl";
+    public static final String KEY_ACCEPTED_ONLY = "crawl_accepted_only";
 
     private final SettingsDAO settingsDAO = new SettingsDAO();
 
@@ -24,7 +24,7 @@ public class SettingsService {
         try {
             return settingsDAO.get(KEY_GEMINI_API, "");
         } catch (SQLException e) {
-            System.err.println("Lỗi đọc Gemini key: " + e.getMessage());
+            System.err.println("Loi doc Gemini key: " + e.getMessage());
             return "";
         }
     }

@@ -116,4 +116,21 @@ public class SubmissionAnalysisController {
         // Mỗi submission mất khoảng 3-5 giây để phân tích với AI
         return count * 4; // Average 4 seconds per submission
     }
+
+    /**
+     * Phân tích tất cả submissions pending (async).
+     *
+     * @param logCallback Callback để log tiến trình
+     * @param progressCallback Callback để cập nhật progress (current, total)
+     */
+    public void analyzeAllPending(Consumer<String> logCallback, java.util.function.BiConsumer<Integer, Integer> progressCallback) {
+        analysisService.analyzeAllPending(logCallback, progressCallback);
+    }
+
+    /**
+     * Lấy kết quả phân tích của một submission (sync).
+     */
+    public Analysis getAnalysis(Integer submissionDbId) throws Exception {
+        return analysisService.getAnalysis(submissionDbId);
+    }
 }

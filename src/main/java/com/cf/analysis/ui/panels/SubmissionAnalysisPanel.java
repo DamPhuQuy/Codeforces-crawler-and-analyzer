@@ -32,34 +32,20 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
-import com.cf.analysis.bll.AnalysisService;
-import com.cf.analysis.bll.UserService;
 import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
 import com.cf.analysis.ui.controllers.SubmissionAnalysisController;
+import com.cf.analysis.ui.controllers.UserManagementController;
 import com.cf.analysis.ui.dialogs.SubmissionDetailDialog;
 
 import net.miginfocom.swing.MigLayout;
 
-/**
- * Panel Tab 3: 🔍 Phân Tích Submissions.
- *
- * Layout 3 vùng:
- * ┌──────────────┬──────────────────────┬──────────────────┐
- * │ Trái (25%)   │    Giữa (45%)        │   Phải (30%)     │
- * │ Chọn nick    │  Source Code Viewer  │  Kết quả AI      │
- * │ + Bảng sub   │  (RSyntaxTextArea)   │  6 tiêu chí      │
- * │              │  Highlight dòng AI   │  CTDL + Algo     │
- * └──────────────┴──────────────────────┴──────────────────┘
- */
 public class SubmissionAnalysisPanel extends JPanel {
 
-    // ====== Services ======
-    private final UserService userService;
-    private final AnalysisService analysisService;
-    private final SubmissionAnalysisController controller;
+    private final SubmissionAnalysisController analysisController;
+    private final UserManagementController userController;
 
     // ====== UI: Phần trái ======
     private JComboBox<String>  userComboBox;
@@ -94,11 +80,10 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     // ==================== Constructor ====================
 
-    public SubmissionAnalysisPanel(MainFrame mainFrame, UserService userService, AnalysisService analysisService    ) {
+    public SubmissionAnalysisPanel(MainFrame mainFrame, UserManagementController userController, SubmissionAnalysisController analysisController) {
         this.mainFrame = mainFrame;
-        this.userService = userService;
-        this.analysisService = analysisService;
-        this.controller = new SubmissionAnalysisController(userService, analysisService);
+        this.userController = userController;
+        this.analysisController = analysisController;
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
@@ -346,7 +331,7 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     /** Load danh sách nick vào ComboBox. */
     private void loadUserList() {
-        controller.getAllUsersAsync()
+        analysisController.getAllUsersAsync()
             .thenAccept(users -> {
                 userComboBox.removeAllItems();
                 for (User u : users) {
@@ -365,7 +350,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         currentSubmissions.clear();
         analyzeSelectedBtn.setEnabled(false);
 
-        controller.getSubmissionsByHandleAsync(handle)
+        analysisController.getSubmissionsByHandleAsync(handle)
             .thenAccept(subs -> {
                 currentSubmissions = subs;
                 for (int i = 0; i < subs.size(); i++) {
@@ -403,7 +388,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         codeArea.removeAllLineHighlights();
 
         // Load analysis (background vì query DB)
-        controller.getAnalysisAsync(sub.getId())
+        analysisController.getAnalysisAsync(sub.getId())
             .thenAccept(a -> {
                 if (a != null) showAnalysis(a);
                 else           clearAnalysis();
@@ -503,7 +488,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         analysisProgress.setIndeterminate(true);
         analysisProgress.setString("Đang phân tích...");
 
-        controller.analyzeSubmissionAsync(sub.getId(), null)
+        analysisController.analyzeSubmissionAsync(sub.getId(), null)
             .thenAccept(a -> {
                 showAnalysis(a);
                 submissionModel.setValueAt("[x]", row, 5);
@@ -528,7 +513,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         analysisProgress.setValue(0);
         analysisProgress.setString("0%");
 
-        analysisService.analyzeAllPending(
+        analysisController.analyzeAllPending(
             null, // logCallback (không cần trong panel này)
             (current, total) -> SwingUtilities.invokeLater(() -> {
                 int pct = (int)((double) current / total * 100);
@@ -550,25 +535,23 @@ public class SubmissionAnalysisPanel extends JPanel {
         if (row < 0 || row >= currentSubmissions.size()) return;
         Submission sub = currentSubmissions.get(row);
         try {
-            Analysis a = analysisService.getAnalysis(sub.getId());
+            Analysis a = analysisController.getAnalysis(sub.getId());
             new SubmissionDetailDialog(mainFrame, sub, a).setVisible(true);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(mainFrame, "Lỗi: " + ex.getMessage());
         }
     }
 
-    // ==================== Util ====================
-
     public void refreshData() { loadUserList(); }
 
     private Color getHighlightColor(String cat) {
         return switch (cat != null ? cat : "") {
             case "textbook_comments" -> new Color(255, 240, 50, 55);
-            case "ai_pattern"        -> new Color(255, 80,  80, 55);
-            case "perfect_naming"    -> new Color(80,  190, 255, 55);
-            case "too_clean"         -> new Color(190, 80,  255, 55);
-            case "wrong_style"       -> new Color(255, 150, 50, 55);
-            default                  -> new Color(200, 200, 200, 40);
+            case "ai_pattern" -> new Color(255, 80,  80, 55);
+            case "perfect_naming" -> new Color(80,  190, 255, 55);
+            case "too_clean" -> new Color(190, 80,  255, 55);
+            case "wrong_style" -> new Color(255, 150, 50, 55);
+            default -> new Color(200, 200, 200, 40);
         };
     }
 
@@ -593,7 +576,7 @@ public class SubmissionAnalysisPanel extends JPanel {
             setHorizontalAlignment(JLabel.CENTER);
             if (!sel && v != null) {
                 if ("AC".equals(v.toString())) setForeground(new Color(180, 180, 180));
-                else                           setForeground(new Color(150, 150, 150));
+                else setForeground(new Color(150, 150, 150));
             }
             return this;
         }

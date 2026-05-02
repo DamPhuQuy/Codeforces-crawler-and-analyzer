@@ -19,7 +19,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import com.cf.analysis.bll.UserService;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.ui.MainFrame;
 import com.cf.analysis.ui.controllers.UserManagementController;
@@ -29,7 +28,6 @@ import net.miginfocom.swing.MigLayout;
 
 public class UserManagementPanel extends JPanel {
 
-    private final UserService userService;
     private final UserManagementController controller;
 
     private JTable userTable;
@@ -46,10 +44,9 @@ public class UserManagementPanel extends JPanel {
     private final MainFrame mainFrame;
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
-    public UserManagementPanel(MainFrame mainFrame, UserService userService) {
+    public UserManagementPanel(MainFrame mainFrame, UserManagementController controller) {
         this.mainFrame = mainFrame;
-        this.userService = userService;
-        this.controller = new UserManagementController(userService);
+        this.controller = controller;
 
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
@@ -61,7 +58,7 @@ public class UserManagementPanel extends JPanel {
 
     private void initComponents() {
         add(buildToolbar(), BorderLayout.NORTH);
-        add(buildTable(),   BorderLayout.CENTER);
+        add(buildTable(), BorderLayout.CENTER);
 
         statusLabel = new JLabel("Sẵn sàng");
         statusLabel.setFont(new Font("Arial", Font.ITALIC, 11));
@@ -100,7 +97,7 @@ public class UserManagementPanel extends JPanel {
 
 
         addButton.addActionListener(e -> {
-            AddUserDialog dialog = new AddUserDialog(mainFrame, userService);
+            AddUserDialog dialog = new AddUserDialog(mainFrame, controller);
             dialog.setVisible(true); // Blocking (modal dialog)
             if (dialog.isSuccess()) {
                 loadData();
@@ -174,7 +171,7 @@ public class UserManagementPanel extends JPanel {
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
-            controller.removeUserAsync(handle)
+            controller.removeUser(handle)
                 .thenRun(() -> {
                     loadData();
                     setStatus("Đã xóa nick: " + handle);
@@ -196,7 +193,7 @@ public class UserManagementPanel extends JPanel {
         refreshRatingBtn.setEnabled(false);
         setStatus("Đang cập nhật rating của " + handle + "...");
 
-        controller.refreshUserInfoAsync(handle)
+        controller.refreshUserInfo(handle)
             .thenAccept(updated -> {
                 loadData(); // Reload bảng
                 refreshRatingBtn.setEnabled(true);
@@ -211,7 +208,7 @@ public class UserManagementPanel extends JPanel {
     }
 
     public void loadData() {
-        controller.getAllUsersAsync()
+        controller.getAllUsers()
             .thenAccept(users -> {
                 tableModel.setRowCount(0);
 
@@ -254,15 +251,15 @@ public class UserManagementPanel extends JPanel {
 
             if (!isSelected && value != null) {
                 String rank = value.toString().toLowerCase();
-                if      (rank.contains("legendary"))        setForeground(new Color(255, 30,  30));
-                else if (rank.contains("international"))    setForeground(new Color(255, 50,  50));
-                else if (rank.contains("grandmaster"))      setForeground(new Color(220, 30,  30));
-                else if (rank.contains("master"))           setForeground(new Color(255, 140,  0));
-                else if (rank.contains("candidate"))        setForeground(new Color(255, 140,  0));
-                else if (rank.contains("expert"))           setForeground(new Color(170,   0, 170));
-                else if (rank.contains("specialist"))       setForeground(new Color(  3, 168, 158));
-                else if (rank.contains("pupil"))            setForeground(new Color(119, 167, 119));
-                else                                        setForeground(Color.GRAY); // newbie
+                if (rank.contains("legendary")) setForeground(new Color(255, 30,  30));
+                else if (rank.contains("international")) setForeground(new Color(255, 50,  50));
+                else if (rank.contains("grandmaster")) setForeground(new Color(220, 30,  30));
+                else if (rank.contains("master")) setForeground(new Color(255, 140,  0));
+                else if (rank.contains("candidate")) setForeground(new Color(255, 140,  0));
+                else if (rank.contains("expert")) setForeground(new Color(170,   0, 170));
+                else if (rank.contains("specialist")) setForeground(new Color(  3, 168, 158));
+                else if (rank.contains("pupil")) setForeground(new Color(119, 167, 119));
+                else setForeground(Color.GRAY);
             }
 
             return this;

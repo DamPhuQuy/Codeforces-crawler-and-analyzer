@@ -178,7 +178,7 @@ public class CrawlService {
     /** Tắt lịch crawl định kỳ. */
     public void stopSchedule() {
         if (scheduledTask != null) { scheduledTask.cancel(false); scheduledTask = null; }
-        if (scheduler     != null) { scheduler.shutdown();        scheduler     = null; }
+        if (scheduler != null) { scheduler.shutdown();        scheduler     = null; }
     }
 
     /** Yêu cầu dừng crawl đang chạy (graceful stop). */

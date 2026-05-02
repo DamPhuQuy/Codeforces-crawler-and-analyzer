@@ -9,12 +9,12 @@ import com.cf.analysis.bll.SettingsService;
  * Controller cho Crawl Monitor Panel.
  * Xử lý logic điều khiển crawling submissions.
  */
-public class CrawlMonitorController {
+public class CrawlController {
 
     private final CrawlService crawlService;
     private final SettingsService settingsService;
 
-    public CrawlMonitorController(CrawlService crawlService, SettingsService settingsService) {
+    public CrawlController(CrawlService crawlService, SettingsService settingsService) {
         this.crawlService = crawlService;
         this.settingsService = settingsService;
     }

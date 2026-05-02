@@ -21,10 +21,9 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-import com.cf.analysis.bll.CrawlService;
-import com.cf.analysis.bll.SettingsService;
 import com.cf.analysis.ui.MainFrame;
-import com.cf.analysis.ui.controllers.CrawlMonitorController;
+import com.cf.analysis.ui.controllers.CrawlController;
+import com.cf.analysis.ui.controllers.SettingsController;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -43,12 +42,11 @@ import net.miginfocom.swing.MigLayout;
  * Callback phải gọi SwingUtilities.invokeLater() trước khi update UI
  * vì Swing KHÔNG thread-safe (chỉ EDT mới được update UI).
  */
-public class CrawlMonitorPanel extends JPanel {
+public class CrawlPanel extends JPanel {
 
     // ====== Services ======
-    private final CrawlService crawlService;
-    private final SettingsService settingsService;
-    private final CrawlMonitorController controller;
+    private final SettingsController settingsController;
+    private final CrawlController controller;
 
     // ====== UI Components ======
     private JButton     crawlAllBtn;
@@ -66,11 +64,10 @@ public class CrawlMonitorPanel extends JPanel {
 
     // ==================== Constructor ====================
 
-    public CrawlMonitorPanel(MainFrame mainFrame, CrawlService crawlService, SettingsService settingsService) {
+    public CrawlPanel(MainFrame mainFrame, CrawlController controller, SettingsController settingsController) {
         this.mainFrame = mainFrame;
-        this.crawlService = crawlService;
-        this.settingsService = settingsService;
-        this.controller = new CrawlMonitorController(crawlService, settingsService);
+        this.settingsController = settingsController;
+        this.controller = controller;
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 

@@ -24,7 +24,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import com.cf.analysis.bll.EvaluationService;
 import com.cf.analysis.model.user.UserScore;
 import com.cf.analysis.ui.MainFrame;
 import com.cf.analysis.ui.controllers.EvaluationController;
@@ -33,12 +32,10 @@ import net.miginfocom.swing.MigLayout;
 
 public class EvaluationPanel extends JPanel {
 
-    private final EvaluationService evaluationService;
     private final EvaluationController controller;
 
-     public EvaluationPanel(MainFrame mainFrame, EvaluationService evaluationService) {
-        this.evaluationService = evaluationService;
-        this.controller = new EvaluationController(evaluationService);
+    public EvaluationPanel(MainFrame mainFrame, EvaluationController evaluationController) {
+        this.controller = evaluationController;
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -46,14 +43,13 @@ public class EvaluationPanel extends JPanel {
         loadData();
     }
 
-    // ====== UI ======
-    private JTable            rankTable;
+    private JTable rankTable;
     private DefaultTableModel rankModel;
-    private JButton           refreshBtn;
-    private RadarChartPanel   radarChart;
-    private JLabel            badgeLabel;
-    private JLabel            levelLabel;
-    private JLabel            statsLabel;
+    private JButton refreshBtn;
+    private RadarChartPanel radarChart;
+    private JLabel badgeLabel;
+    private JLabel levelLabel;
+    private JLabel statsLabel;
 
     private List<UserScore> scores; // Cache để biết row nào = UserScore nào
 
@@ -62,8 +58,6 @@ public class EvaluationPanel extends JPanel {
     };
 
     private final MainFrame mainFrame;
-
-    // ==================== Build UI ====================
 
     private void initComponents() {
         // ---- Header ----

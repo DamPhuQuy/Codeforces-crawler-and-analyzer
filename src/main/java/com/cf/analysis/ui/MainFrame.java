@@ -17,18 +17,18 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
-import com.cf.analysis.bll.AnalysisService;
-import com.cf.analysis.bll.CrawlService;
-import com.cf.analysis.bll.EvaluationService;
-import com.cf.analysis.bll.SettingsService;
-import com.cf.analysis.bll.UserService;
 import com.cf.analysis.crawler.CodeforcesApiCaller;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.dal.UserScoreDAO;
 import com.cf.analysis.db.DatabaseConnection;
-import com.cf.analysis.ui.panels.CrawlMonitorPanel;
+import com.cf.analysis.ui.controllers.CrawlController;
+import com.cf.analysis.ui.controllers.EvaluationController;
+import com.cf.analysis.ui.controllers.SettingsController;
+import com.cf.analysis.ui.controllers.SubmissionAnalysisController;
+import com.cf.analysis.ui.controllers.UserManagementController;
+import com.cf.analysis.ui.panels.CrawlPanel;
 import com.cf.analysis.ui.panels.EvaluationPanel;
 import com.cf.analysis.ui.panels.SettingsPanel;
 import com.cf.analysis.ui.panels.SubmissionAnalysisPanel;
@@ -41,7 +41,7 @@ import okhttp3.OkHttpClient;
 public class MainFrame extends JFrame {
 
     private UserManagementPanel userManagementPanel;
-    private CrawlMonitorPanel crawlMonitorPanel;
+    private CrawlPanel crawlMonitorPanel;
     private SubmissionAnalysisPanel submissionAnalysisPanel;
     private EvaluationPanel evaluationPanel;
     private SettingsPanel settingsPanel;
@@ -153,17 +153,25 @@ public class MainFrame extends JFrame {
         // api
         CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
 
-        SettingsService settingsService = new SettingsService();
-        UserService userService = new UserService(userDAO, cfClient);
-        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, cfClient, settingsService);
-        AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, settingsService);
-        EvaluationService evaluationService = new EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
+        // Services
+        com.cf.analysis.bll.SettingsService settingsService = new com.cf.analysis.bll.SettingsService();
+        com.cf.analysis.bll.UserService userService = new com.cf.analysis.bll.UserService(userDAO, cfClient);
+        com.cf.analysis.bll.AnalysisService analysisService = new com.cf.analysis.bll.AnalysisService(submissionDAO, analysisDAO, settingsService);
+        com.cf.analysis.bll.CrawlService crawlService = new com.cf.analysis.bll.CrawlService(userDAO, submissionDAO, cfClient, settingsService);
+        com.cf.analysis.bll.EvaluationService evaluationService = new com.cf.analysis.bll.EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
 
-        userManagementPanel     = new UserManagementPanel(this, userService);
-        crawlMonitorPanel       = new CrawlMonitorPanel(this, crawlService, settingsService);
-        submissionAnalysisPanel = new SubmissionAnalysisPanel(this, userService, analysisService);
-        evaluationPanel         = new EvaluationPanel(this, evaluationService);
-        settingsPanel           = new SettingsPanel(this);
+        // Controllers
+        UserManagementController userController = new UserManagementController(userService);
+        SubmissionAnalysisController analysisController = new SubmissionAnalysisController(userService, analysisService);
+        SettingsController settingsController = new SettingsController(settingsService);
+        EvaluationController evaluationController = new EvaluationController(evaluationService);
+        CrawlController crawlController = new CrawlController(crawlService, settingsService);
+
+        userManagementPanel = new UserManagementPanel(this, userController);
+        crawlMonitorPanel = new CrawlPanel(this, crawlController, settingsController);
+        submissionAnalysisPanel = new SubmissionAnalysisPanel(this, userController, analysisController);
+        evaluationPanel = new EvaluationPanel(this, evaluationController);
+        settingsPanel = new SettingsPanel(this);
 
         // Thêm vào tabs
         tabs.addTab("  Quản Lý Nick  ", userManagementPanel);

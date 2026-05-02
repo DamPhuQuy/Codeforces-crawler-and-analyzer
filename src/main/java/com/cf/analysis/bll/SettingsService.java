@@ -1,8 +1,8 @@
 package com.cf.analysis.bll;
 
-import com.cf.analysis.dal.SettingsDAO;
-
 import java.sql.SQLException;
+
+import com.cf.analysis.dal.SettingsDAO;
 
 /**
  * BLL - Quản lý cài đặt ứng dụng (Gemini API key, crawl interval, ...).

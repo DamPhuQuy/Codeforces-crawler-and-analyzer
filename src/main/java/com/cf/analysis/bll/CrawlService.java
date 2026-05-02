@@ -10,9 +10,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import com.cf.analysis.crawler.CodeforcesApiCaller;
+import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler;
+import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler.SubmissionSourceCode;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
-import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.user.User;
 
 /**
@@ -31,6 +32,7 @@ public class CrawlService {
     private final UserDAO userDAO;
     private final SubmissionDAO submissionDAO;
     private final CodeforcesApiCaller cfClient;
+    private final CodeforcesSourceCodeCrawler crawler;
     private final SettingsService settings;
 
     // Scheduler cho crawl định kỳ
@@ -46,6 +48,7 @@ public class CrawlService {
         this.userDAO = userDAO;
         this.submissionDAO = submissionDAO;
         this.cfClient = cfClient;
+        this.crawler = new CodeforcesSourceCodeCrawler(cfClient);
         this.settings = settings;
     }
 
@@ -60,7 +63,7 @@ public class CrawlService {
      */
     public void crawlAll(Consumer<String> logCallback, Consumer<Integer> doneCallback) {
         if (crawling) {
-            log(logCallback, "⚠️ Đang có crawl session đang chạy, vui lòng đợi...");
+            log(logCallback, "Cảnh báo: Đang có crawl session đang chạy, vui lòng đợi...");
             return;
         }
 
@@ -71,22 +74,28 @@ public class CrawlService {
             try {
                 List<User> users = userDAO.findAll();
                 if (users.isEmpty()) {
-                    log(logCallback, "ℹ️ Chưa có nick nào trong hệ thống! Vào tab Quản Lý Nick để thêm.");
+                    log(logCallback, "Thông tin: Chưa có nick nào trong hệ thống! Vào tab Quản Lý Nick để thêm.");
                     return;
                 }
 
-                log(logCallback, "🚀 Bắt đầu crawl " + users.size() + " nick...");
+                log(logCallback, "Bắt đầu crawl " + users.size() + " nick...");
+                log(logCallback, "Khởi tạo browser...");
+
+                crawler.initBrowser();
 
                 for (User user : users) {
                     if (!crawling) break; // Cho phép dừng giữa chừng
                     totalNew += crawlSingleUser(user.getHandle(), logCallback);
                 }
 
-                log(logCallback, "✅ Hoàn tất! Tổng cộng: +" + totalNew + " submissions mới.");
+                log(logCallback, "Hoàn tất! Tổng cộng: +" + totalNew + " submissions mới.");
 
             } catch (Exception e) {
-                log(logCallback, "❌ Lỗi crawl: " + e.getMessage());
+                log(logCallback, "Lỗi crawl: " + e.getMessage());
+                e.printStackTrace();
             } finally {
+                crawler.closeBrowser();
+                log(logCallback, "Đã đóng browser");
                 crawling = false;
                 int finalTotal = totalNew;
                 if (doneCallback != null) doneCallback.accept(finalTotal);
@@ -106,47 +115,33 @@ public class CrawlService {
         int newCount = 0;
 
         try {
-            log(logCallback, "📥 Crawling: " + handle + " ...");
+            log(logCallback, "Crawling: " + handle + " ...");
 
             // Lấy submission_id cao nhất đã có → chỉ crawl mới hơn
             long maxExistingId = submissionDAO.getMaxSubmissionId(handle);
             int  maxCount      = settings.getMaxSubmissionsPerCrawl();
 
-            // Gọi CF API lấy danh sách submission mới
-            List<Submission> newSubs = cfClient.getUserSubmissions(handle, maxCount, maxExistingId);
-            log(logCallback, "  → Tìm thấy " + newSubs.size() + " submission mới (Accepted)");
+            // Crawl song song với browser đã khởi tạo
+            List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, maxExistingId);
 
-            // Với mỗi submission: lấy source code rồi lưu vào DB
-            for (int i = 0; i < newSubs.size(); i++) {
-                if (!crawling && i > 0) break; // Kiểm tra stop flag
+            log(logCallback, "  -> Crawled " + results.size() + " submissions (parallel)");
 
-                Submission sub = newSubs.get(i);
-                log(logCallback, "  → [" + (i + 1) + "/" + newSubs.size() + "] "
-                        + sub.getProblemName() + " - lấy source code...");
+            // Lưu vào DB
+            for (SubmissionSourceCode result : results) {
+                if (!crawling) break; // Kiểm tra stop flag
 
-                try {
-                    String code = cfClient.getSubmissionSourceCode(
-                        sub.getContestId(), sub.getSubmissionId()
-                    );
-                    sub.setSourceCode(code);
-                    if (code == null) {
-                        log(logCallback, "    ⚠️ Code bị ẩn hoặc không truy cập được.");
-                    }
-                } catch (Exception e) {
-                    log(logCallback, "    ⚠️ Không lấy được code: " + e.getMessage());
-                }
-
-                // Lưu vào DB (ON CONFLICT DO NOTHING nên an toàn)
-                submissionDAO.insert(sub);
+                result.submission.setSourceCode(result.sourceCode);
+                submissionDAO.insert(result.submission);
                 newCount++;
             }
 
             // Cập nhật thời gian crawl cuối
             userDAO.updateLastCrawl(handle, LocalDateTime.now());
-            log(logCallback, "  ✅ " + handle + ": +" + newCount + " submissions");
+            log(logCallback, "  " + handle + ": +" + newCount + " submissions");
 
         } catch (Exception e) {
-            log(logCallback, "  ❌ Lỗi crawl " + handle + ": " + e.getMessage());
+            log(logCallback, "  Lỗi crawl " + handle + ": " + e.getMessage());
+            e.printStackTrace();
         }
 
         return newCount;
@@ -177,7 +172,7 @@ public class CrawlService {
             TimeUnit.HOURS
         );
 
-        log(logCallback, "⏰ Lịch crawl tự động mỗi " + intervalHours + " giờ đã được bật.");
+        log(logCallback, "Lịch crawl tự động mỗi " + intervalHours + " giờ đã được bật.");
     }
 
     /** Tắt lịch crawl định kỳ. */

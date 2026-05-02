@@ -177,7 +177,8 @@ public class CrawlMonitorPanel extends JPanel {
         stopBtn.setEnabled(true);
         progressBar.setIndeterminate(true);
         progressBar.setString("Đang crawl...");
-        appendLog("\n=== BẮT ĐẦU CRAWL ===", new Color(180, 180, 180));
+        appendLog("\n=== BẮT ĐẦU CRAWL (PARALLEL MODE) ===", new Color(180, 180, 180));
+        appendLog("Sử dụng 5 threads song song với 1 browser instance", new Color(150, 150, 150));
 
         controller.crawlAllUsersAsync(
             // logCallback: CrawlService gọi callback này với mỗi dòng log
@@ -279,10 +280,19 @@ public class CrawlMonitorPanel extends JPanel {
 
     /** Chọn màu log theo nội dung message. */
     private Color getMessageColor(String msg) {
-        if (msg.contains("Hoàn tất") || msg.contains("thành công")) return new Color(180, 180, 180);
-        if (msg.contains("Lỗi") || msg.contains("lỗi"))             return new Color(200, 200, 200);
-        if (msg.contains("==="))                                     return new Color(160, 160, 160);
-        return new Color(190, 190, 190);
+        if (msg.contains("Hoàn tất") || msg.contains("thành công"))
+            return new Color(100, 200, 100);
+        if (msg.contains("Lỗi") || msg.contains("lỗi"))
+            return new Color(255, 100, 100);
+        if (msg.contains("Cảnh báo"))
+            return new Color(255, 200, 100);
+        if (msg.contains("==="))
+            return new Color(160, 160, 200);
+        if (msg.contains("Bắt đầu") || msg.contains("Khởi tạo") || msg.contains("Crawling"))
+            return new Color(150, 180, 255);
+        if (msg.contains("Đã đóng") || msg.contains("Crawled"))
+            return new Color(180, 180, 180);
+        return new Color(200, 200, 200);
     }
 
     /** Cuộn log pane xuống dưới cùng. */

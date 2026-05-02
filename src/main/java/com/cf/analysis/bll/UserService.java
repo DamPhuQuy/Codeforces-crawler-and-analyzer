@@ -19,20 +19,22 @@ public class UserService {
     }
 
     public User addUser(String handle) throws Exception {
-        // Kiểm tra trùng trước
         User existing = userDAO.findByHandle(handle.trim());
         if (existing != null) {
-            throw new IllegalArgumentException("Handle '" + handle + "' đã tồn tại trong hệ thống!");
+            throw new IllegalArgumentException("Handle '" + handle + "' da ton tai trong he thong!");
         }
 
-        // Gọi CF API để lấy thông tin
         List<User> users = cfClient.getUserInfo(List.of(handle.trim()));
         if (users == null || users.isEmpty()) {
-            throw new IOException("Không tìm thấy handle '" + handle + "' trên Codeforces!");
+            throw new IOException("Khong tim thay handle '" + handle + "' tren Codeforces!");
         }
+
         User user = users.get(0);
 
-        // Lưu vào DB
+        System.out.println("firstname: " + user.getFirstName());
+        System.out.println("lastname: " + user.getLastName());
+        System.out.println("email: " + user.getEmail());
+
         userDAO.insert(user);
         return user;
     }

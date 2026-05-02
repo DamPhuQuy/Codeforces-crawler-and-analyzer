@@ -90,14 +90,24 @@ public class CodeforcesApiCaller {
     private User parseUser(JsonObject jsonUser) {
         User u = new User(jsonUser.get("handle").getAsString());
 
+        u.setEmail(jsonUser.has("email") ? jsonUser.get("email").getAsString() : "");
+        u.setVkId(jsonUser.has("vkId") ? jsonUser.get("vkId").getAsString() : "");
+        u.setOpenId(jsonUser.has("openId") ? jsonUser.get("openId").getAsString() : "");
         u.setFirstName(jsonUser.has("firstName") ? jsonUser.get("firstName").getAsString() : "");
         u.setLastName(jsonUser.has("lastName") ? jsonUser.get("lastName").getAsString() : "");
-
-        u.setRating(jsonUser.has("rating") ? jsonUser.get("rating").getAsInt() : 0);
-        u.setMaxRating(jsonUser.has("maxRating") ? jsonUser.get("maxRating").getAsInt() : 0);
-        u.setRank(jsonUser.has("rank") ? jsonUser.get("rank").getAsString() : "newbie");
         u.setCountry(jsonUser.has("country") ? jsonUser.get("country").getAsString() : "");
-        u.setAvatarUrl(jsonUser.has("avatarUrl") ? jsonUser.get("avatarUrl").getAsString() : "");
+        u.setCity(jsonUser.has("city") ? jsonUser.get("city").getAsString() : "");
+        u.setOrganization(jsonUser.has("organization") ? jsonUser.get("organization").getAsString() : "");
+        u.setContribution(jsonUser.has("contribution") ? jsonUser.get("contribution").getAsInt() : 0);
+        u.setRank(jsonUser.has("rank") ? jsonUser.get("rank").getAsString() : "newbie");
+        u.setRating(jsonUser.has("rating") ? jsonUser.get("rating").getAsInt() : 0);
+        u.setMaxRank(jsonUser.has("maxRank") ? jsonUser.get("maxRank").getAsString() : "");
+        u.setMaxRating(jsonUser.has("maxRating") ? jsonUser.get("maxRating").getAsInt() : 0);
+        u.setLastOnlineTimeSeconds(jsonUser.has("lastOnlineTimeSeconds") ? jsonUser.get("lastOnlineTimeSeconds").getAsInt() : 0);
+        u.setRegistrationTimeSeconds(jsonUser.has("registrationTimeSeconds") ? jsonUser.get("registrationTimeSeconds").getAsInt() : 0);
+        u.setFriendOfCount(jsonUser.has("friendOfCount") ? jsonUser.get("friendOfCount").getAsInt() : 0);
+        u.setAvatarUrl(jsonUser.has("avatar") ? jsonUser.get("avatar").getAsString() : "");
+        u.setTitlePhotoUrl(jsonUser.has("titlePhoto") ? jsonUser.get("titlePhoto").getAsString() : "");
 
         return u;
     }

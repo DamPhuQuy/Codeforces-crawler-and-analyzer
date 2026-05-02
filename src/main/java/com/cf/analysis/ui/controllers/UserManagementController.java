@@ -26,7 +26,7 @@ public class UserManagementController {
             try {
                 return userService.getAllUsers();
             } catch (Exception e) {
-                throw new RuntimeException("Lỗi tải danh sách users: " + e.getMessage(), e);
+                throw new RuntimeException("Loi tai danh sach users: " + e.getMessage(), e);
             }
         });
     }
@@ -39,7 +39,7 @@ public class UserManagementController {
             try {
                 return userService.addUser(handle);
             } catch (Exception e) {
-                throw new RuntimeException("Lỗi thêm user: " + e.getMessage(), e);
+                throw new RuntimeException("Loi them user: " + e.getMessage(), e);
             }
         });
     }
@@ -52,7 +52,7 @@ public class UserManagementController {
             try {
                 userService.removeUser(handle);
             } catch (Exception e) {
-                throw new RuntimeException("Lỗi xóa user: " + e.getMessage(), e);
+                throw new RuntimeException("Loi xoa user: " + e.getMessage(), e);
             }
         });
     }
@@ -65,7 +65,7 @@ public class UserManagementController {
             try {
                 return userService.refreshUserInfo(handle);
             } catch (Exception e) {
-                throw new RuntimeException("Lỗi cập nhật rating: " + e.getMessage(), e);
+                throw new RuntimeException("Loi cap nhat rating: " + e.getMessage(), e);
             }
         });
     }

@@ -6,7 +6,7 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -42,7 +42,7 @@ public class UserManagementPanel extends JPanel {
     };
 
     private final MainFrame mainFrame;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     public UserManagementPanel(MainFrame mainFrame, UserManagementController controller) {
         this.mainFrame = mainFrame;
@@ -220,8 +220,8 @@ public class UserManagementPanel extends JPanel {
                         u.getMaxRating(),
                         u.getRank() != null ? u.getRank() : "newbie",
                         u.getCountry() != null ? u.getCountry() : "",
-                        u.getAddedDate()    != null ? sdf.format(u.getAddedDate())    : "N/A",
-                        u.getLastCrawlAt()  != null ? sdf.format(u.getLastCrawlAt())  : "Chưa crawl"
+                        u.getAddedDate() != null ? u.getAddedDate().format(dateFormatter) : "N/A",
+                        u.getLastCrawlAt() != null ? u.getLastCrawlAt().format(dateFormatter) : "Chưa crawl"
                     });
                 }
 

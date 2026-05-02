@@ -17,6 +17,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
+import com.cf.analysis.bll.AnalysisService;
+import com.cf.analysis.bll.CrawlService;
+import com.cf.analysis.bll.EvaluationService;
+import com.cf.analysis.bll.SettingsService;
+import com.cf.analysis.bll.UserService;
 import com.cf.analysis.crawler.CodeforcesApiCaller;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
@@ -154,11 +159,11 @@ public class MainFrame extends JFrame {
         CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
 
         // Services
-        com.cf.analysis.bll.SettingsService settingsService = new com.cf.analysis.bll.SettingsService();
-        com.cf.analysis.bll.UserService userService = new com.cf.analysis.bll.UserService(userDAO, cfClient);
-        com.cf.analysis.bll.AnalysisService analysisService = new com.cf.analysis.bll.AnalysisService(submissionDAO, analysisDAO, settingsService);
-        com.cf.analysis.bll.CrawlService crawlService = new com.cf.analysis.bll.CrawlService(userDAO, submissionDAO, cfClient, settingsService);
-        com.cf.analysis.bll.EvaluationService evaluationService = new com.cf.analysis.bll.EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
+        SettingsService settingsService = new SettingsService();
+        UserService userService = new UserService(userDAO, cfClient);
+        AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, settingsService);
+        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, cfClient, settingsService);
+        EvaluationService evaluationService = new EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
 
         // Controllers
         UserManagementController userController = new UserManagementController(userService);

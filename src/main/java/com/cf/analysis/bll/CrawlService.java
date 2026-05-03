@@ -46,17 +46,17 @@ public class CrawlService {
 
     private final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, CodeforcesApiCaller cfClient, SettingsService settings) {
+    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, CodeforcesApiCaller cfClient, SettingsService settings, CodeforcesSourceCodeCrawler crawler) {
         this.userDAO = userDAO;
         this.submissionDAO = submissionDAO;
         this.cfClient = cfClient;
-        this.crawler = new CodeforcesSourceCodeCrawler(cfClient);
+        this.crawler = crawler;
         this.settings = settings;
     }
 
     public void crawlAll(Consumer<String> logCallback, Consumer<Integer> doneCallback) {
         if (crawling) {
-            log(logCallback, "Cảnh báo: Đang có crawl session đang chạy, vui lòng đợi...");
+            log(logCallback, "Canh bao: Dang co crawl dang chay.");
             return;
         }
 
@@ -67,23 +67,23 @@ public class CrawlService {
             try {
                 List<User> users = userDAO.findAll();
                 if (users.isEmpty()) {
-                    log(logCallback, "Thông tin: Chưa có nick nào trong hệ thống! Vào tab Quản Lý Nick để thêm.");
+                    log(logCallback, "Khong co tai khoan nao de crawl!");
                     return;
                 }
 
-                log(logCallback, "Bắt đầu crawl " + users.size() + " nick...");
+                log(logCallback, "Bat dau crawl " + users.size() + " tai khoan...");
 
                 // Kiểm tra và tạo login session nếu chưa có
                 if (!isLoginSessionAvailable()) {
-                    log(logCallback, "Chưa có session đăng nhập!");
-                    log(logCallback, "Đang mở browser để đăng nhập...");
-                    log(logCallback, "Vui lòng đăng nhập thủ công trong browser.");
+                    log(logCallback, "Chua co session dang nhap!");
+                    log(logCallback, "Mo browser de dang nhap...");
+                    log(logCallback, "Dang nhap thu cong trong browser.");
 
                     crawler.saveLoginSession();
-                    log(logCallback, "Đã lưu session đăng nhập thành công!");
+                    log(logCallback, "Da luu session dang nhap!");
                 }
 
-                log(logCallback, "Khởi tạo browser...");
+                log(logCallback, "Khoi tao browser...");
                 crawler.initBrowser();
 
                 for (User user : users) {
@@ -91,14 +91,14 @@ public class CrawlService {
                     totalNew += crawlSingleUser(user.getHandle(), logCallback);
                 }
 
-                log(logCallback, "Hoàn tất! Tổng cộng: +" + totalNew + " submissions mới.");
+                log(logCallback, "Tong cong: +" + totalNew + " submissions moi.");
 
             } catch (Exception e) {
-                log(logCallback, "Lỗi crawl: " + e.getMessage());
+                log(logCallback, "Loi crawl: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 crawler.closeBrowser();
-                log(logCallback, "Đã đóng browser");
+                log(logCallback, "Da dong browser");
                 crawling = false;
                 int finalTotal = totalNew;
                 if (doneCallback != null) doneCallback.accept(finalTotal);
@@ -110,17 +110,17 @@ public class CrawlService {
         int newCount = 0;
 
         try {
-            log(logCallback, "Crawling: " + handle + " ...");
+            log(logCallback, "Dang crawl: " + handle + " ...");
 
             long maxExistingId = submissionDAO.getMaxSubmissionId(handle);
             int maxCount = settings.getMaxSubmissionsPerCrawl();
 
-            log(logCallback, "  -> Existing max submission ID: " + maxExistingId);
-            log(logCallback, "  -> Max submissions to crawl: " + maxCount);
+            log(logCallback, "-> Max submission id tu lan crawl truoc: " + maxExistingId);
+            log(logCallback, "-> Max submissions duoc setting: " + maxCount);
 
             List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, maxExistingId);
 
-            log(logCallback, "  -> Crawled " + results.size() + " submissions (sequential)");
+            log(logCallback, "-> Da crawl " + results.size() + " submissions");
 
             for (SubmissionSourceCode result : results) {
                 if (!crawling) break;
@@ -138,7 +138,7 @@ public class CrawlService {
             log(logCallback, "  " + handle + ": +" + newCount + " submissions");
 
         } catch (Exception e) {
-            log(logCallback, "  Lỗi crawl " + handle + ": " + e.getMessage());
+            log(logCallback, "Loi crawl " + handle + ": " + e.getMessage());
             e.printStackTrace();
         }
 

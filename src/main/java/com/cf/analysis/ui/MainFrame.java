@@ -23,6 +23,7 @@ import com.cf.analysis.bll.EvaluationService;
 import com.cf.analysis.bll.SettingsService;
 import com.cf.analysis.bll.UserService;
 import com.cf.analysis.crawler.CodeforcesApiCaller;
+import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
@@ -158,11 +159,14 @@ public class MainFrame extends JFrame {
         // api
         CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
 
+        // crawler
+        CodeforcesSourceCodeCrawler crawler = new CodeforcesSourceCodeCrawler(cfClient, submissionDAO);
+
         // Services
         SettingsService settingsService = new SettingsService();
         UserService userService = new UserService(userDAO, cfClient);
         AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, settingsService);
-        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, cfClient, settingsService);
+        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, cfClient, settingsService, crawler);
         EvaluationService evaluationService = new EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
 
         // Controllers

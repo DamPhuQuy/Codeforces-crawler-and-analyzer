@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.model.submission.Submission;
 import com.google.common.util.concurrent.RateLimiter;
 import com.microsoft.playwright.Browser;
@@ -21,11 +22,13 @@ public class CodeforcesSourceCodeCrawler {
     private static final int SELECTOR_TIMEOUT_MS = 20000;
 
     private final CodeforcesApiCaller apiCaller;
+    private final SubmissionDAO submissionDAO;
     private Playwright playwright;
     private Browser browser;
 
-    public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller) {
+    public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller, SubmissionDAO submissionDAO) {
         this.apiCaller = apiCaller;
+        this.submissionDAO = submissionDAO;
     }
 
     public void saveLoginSession() {
@@ -85,7 +88,6 @@ public class CodeforcesSourceCodeCrawler {
     }
 
     public List<SubmissionSourceCode> crawlUserSubmissions(String handle, int maxCount, long minSubId) {
-        // Browser should be initialized by caller (CrawlService)
         if (browser == null) {
             throw new IllegalStateException("Browser not initialized. Call initBrowser() first.");
         }
@@ -98,6 +100,7 @@ public class CodeforcesSourceCodeCrawler {
 
             for (int i = 0; i < submissions.size(); i++) {
                 Submission sub = submissions.get(i);
+
                 System.out.println("Processing submission " + (i + 1) + "/" + submissions.size() + " (ID: " + sub.getId() + ")");
 
                 SubmissionSourceCode result = crawlSubmissionWithRetry(sub);

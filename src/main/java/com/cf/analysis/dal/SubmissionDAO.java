@@ -201,6 +201,16 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
         return list;
     }
 
+    public boolean isSubmissionExists(Integer id) throws SQLException {
+        String sql = "SELECT 1 FROM submissions WHERE id = ?";
+
+        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+            ps.setLong(1, id);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        }
+    }
+
     public int countByHandle(String handle) throws SQLException {
         String sql = "SELECT COUNT(*) FROM submissions WHERE user_handle = ?";
 

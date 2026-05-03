@@ -5,7 +5,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.model.submission.Submission;
 import com.google.common.util.concurrent.RateLimiter;
 import com.microsoft.playwright.Browser;
@@ -22,13 +21,11 @@ public class CodeforcesSourceCodeCrawler {
     private static final int SELECTOR_TIMEOUT_MS = 20000;
 
     private final CodeforcesApiCaller apiCaller;
-    private final SubmissionDAO submissionDAO;
     private Playwright playwright;
     private Browser browser;
 
-    public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller, SubmissionDAO submissionDAO) {
+    public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller) {
         this.apiCaller = apiCaller;
-        this.submissionDAO = submissionDAO;
     }
 
     public void saveLoginSession() {

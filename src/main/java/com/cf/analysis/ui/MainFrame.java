@@ -160,7 +160,7 @@ public class MainFrame extends JFrame {
         CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
 
         // crawler
-        CodeforcesSourceCodeCrawler crawler = new CodeforcesSourceCodeCrawler(cfClient, submissionDAO);
+        CodeforcesSourceCodeCrawler crawler = new CodeforcesSourceCodeCrawler(cfClient);
 
         // Services
         SettingsService settingsService = new SettingsService();

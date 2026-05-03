@@ -331,7 +331,7 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     /** Load danh sách nick vào ComboBox. */
     private void loadUserList() {
-        analysisController.getAllUsersAsync()
+        analysisController.getAllUsers()
             .thenAccept(users -> {
                 userComboBox.removeAllItems();
                 for (User u : users) {
@@ -350,7 +350,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         currentSubmissions.clear();
         analyzeSelectedBtn.setEnabled(false);
 
-        analysisController.getSubmissionsByHandleAsync(handle)
+        analysisController.getSubmissionsByHandle(handle)
             .thenAccept(subs -> {
                 currentSubmissions = subs;
                 for (int i = 0; i < subs.size(); i++) {
@@ -388,7 +388,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         codeArea.removeAllLineHighlights();
 
         // Load analysis (background vì query DB)
-        analysisController.getAnalysisAsync(sub.getId())
+        analysisController.getAnalysis(sub.getId())
             .thenAccept(a -> {
                 if (a != null) showAnalysis(a);
                 else           clearAnalysis();
@@ -488,7 +488,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         analysisProgress.setIndeterminate(true);
         analysisProgress.setString("Đang phân tích...");
 
-        analysisController.analyzeSubmissionAsync(sub.getId(), null)
+        analysisController.analyzeSubmission(sub.getId(), null)
             .thenAccept(a -> {
                 showAnalysis(a);
                 submissionModel.setValueAt("[x]", row, 5);
@@ -535,7 +535,7 @@ public class SubmissionAnalysisPanel extends JPanel {
         if (row < 0 || row >= currentSubmissions.size()) return;
         Submission sub = currentSubmissions.get(row);
         try {
-            Analysis a = analysisController.getAnalysis(sub.getId());
+            Analysis a = analysisController.getAnalysisSync(sub.getId());
             new SubmissionDetailDialog(mainFrame, sub, a).setVisible(true);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(mainFrame, "Lỗi: " + ex.getMessage());

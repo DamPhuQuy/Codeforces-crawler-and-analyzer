@@ -160,7 +160,7 @@ public class EvaluationPanel extends JPanel {
     public void loadData() {
         refreshBtn.setEnabled(false);
 
-        controller.getRankingAsync()
+        controller.getRanking()
             .thenAccept(userScores -> {
                 scores = userScores;
                 rankModel.setRowCount(0);

@@ -26,7 +26,7 @@ public class SettingsController {
     /**
      * Lưu Gemini API key (async).
      */
-    public CompletableFuture<Void> setGeminiApiKeyAsync(String apiKey) {
+    public CompletableFuture<Void> setGeminiApiKey(String apiKey) {
         return CompletableFuture.runAsync(() -> {
             try {
                 settingsService.setGeminiApiKey(apiKey);
@@ -46,7 +46,7 @@ public class SettingsController {
     /**
      * Lưu crawl interval (async).
      */
-    public CompletableFuture<Void> setCrawlIntervalHoursAsync(int hours) {
+    public CompletableFuture<Void> setCrawlIntervalHours(int hours) {
         return CompletableFuture.runAsync(() -> {
             try {
                 settingsService.setCrawlIntervalHours(hours);
@@ -66,7 +66,7 @@ public class SettingsController {
     /**
      * Lưu max submissions per crawl (async).
      */
-    public CompletableFuture<Void> setMaxSubmissionsPerCrawlAsync(int max) {
+    public CompletableFuture<Void> setMaxSubmissionsPerCrawl(int max) {
         return CompletableFuture.runAsync(() -> {
             try {
                 settingsService.setMaxSubmissionsPerCrawl(max);

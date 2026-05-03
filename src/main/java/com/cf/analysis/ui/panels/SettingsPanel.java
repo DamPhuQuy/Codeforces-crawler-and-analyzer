@@ -185,7 +185,7 @@ public class SettingsPanel extends JPanel {
                 setStatus(apiStatusLabel, "Vui lòng nhập API Key!", false);
                 return;
             }
-            controller.setGeminiApiKeyAsync(key)
+            controller.setGeminiApiKey(key)
                 .thenRun(() -> {
                     setStatus(apiStatusLabel, "Đã lưu API Key!", true);
                 })
@@ -223,8 +223,8 @@ public class SettingsPanel extends JPanel {
             int intervalHours = (Integer) crawlIntervalSpinner.getValue();
             int maxSubs = (Integer) maxSubsSpinner.getValue();
 
-            controller.setCrawlIntervalHoursAsync(intervalHours)
-                .thenCompose(v -> controller.setMaxSubmissionsPerCrawlAsync(maxSubs))
+            controller.setCrawlIntervalHours(intervalHours)
+                .thenCompose(v -> controller.setMaxSubmissionsPerCrawl(maxSubs))
                 .thenRun(() -> {
                     JOptionPane.showMessageDialog(mainFrame,
                         "Đã lưu cài đặt crawl!",

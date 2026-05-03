@@ -19,9 +19,9 @@ public class EvaluationController {
     }
 
     /**
-     * Lấy bảng xếp hạng tất cả users (async).
+     * Lấy bảng xếp hạng tất cả users.
      */
-    public CompletableFuture<List<UserScore>> getRankingAsync() {
+    public CompletableFuture<List<UserScore>> getRanking() {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return evaluationService.getRanking();
@@ -32,9 +32,9 @@ public class EvaluationController {
     }
 
     /**
-     * Lấy điểm chi tiết của một user (async).
+     * Lấy điểm chi tiết của một user.
      */
-    public CompletableFuture<UserScore> getUserScoreAsync(String handle) {
+    public CompletableFuture<UserScore> getUserScore(String handle) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return evaluationService.getUserScore(handle);
@@ -45,9 +45,9 @@ public class EvaluationController {
     }
 
     /**
-     * Tính lại điểm cho tất cả users (async).
+     * Tính lại điểm cho tất cả users.
      */
-    public CompletableFuture<Void> recalculateAllScoresAsync() {
+    public CompletableFuture<Void> recalculateAllScores() {
         return CompletableFuture.runAsync(() -> {
             try {
                 evaluationService.recalculateAllScores();

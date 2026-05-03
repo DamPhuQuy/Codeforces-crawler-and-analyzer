@@ -31,12 +31,12 @@ public class CrawlController {
     }
 
     /**
-     * Crawl submissions cho tất cả users (async).
+     * Crawl submissions cho tất cả users.
      *
      * @param logCallback Callback để log tiến trình
      * @param doneCallback Callback khi hoàn tất với tổng số submissions
      */
-    public void crawlAllUsersAsync(Consumer<String> logCallback, Consumer<Integer> doneCallback) {
+    public void crawlAllUsers(Consumer<String> logCallback, Consumer<Integer> doneCallback) {
         crawlService.crawlAll(logCallback, doneCallback);
     }
 

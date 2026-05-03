@@ -25,9 +25,9 @@ public class SubmissionAnalysisController {
     }
 
     /**
-     * Lấy danh sách tất cả users (async).
+     * Lấy danh sách tất cả users.
      */
-    public CompletableFuture<List<User>> getAllUsersAsync() {
+    public CompletableFuture<List<User>> getAllUsers() {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return userService.getAllUsers();
@@ -38,9 +38,9 @@ public class SubmissionAnalysisController {
     }
 
     /**
-     * Lấy submissions của một user (async).
+     * Lấy submissions của một user.
      */
-    public CompletableFuture<List<Submission>> getSubmissionsByHandleAsync(String handle) {
+    public CompletableFuture<List<Submission>> getSubmissionsByHandle(String handle) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return analysisService.getSubmissionsByHandle(handle);
@@ -51,12 +51,12 @@ public class SubmissionAnalysisController {
     }
 
     /**
-     * Phân tích một submission với AI (async).
+     * Phân tích một submission với AI.
      *
      * @param submissionDbId ID của submission trong DB (không phải submission_id)
      * @param logCallback Callback để log tiến trình
      */
-    public CompletableFuture<Analysis> analyzeSubmissionAsync(Integer submissionDbId, Consumer<String> logCallback) {
+    public CompletableFuture<Analysis> analyzeSubmission(Integer submissionDbId, Consumer<String> logCallback) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return analysisService.analyzeSubmission(submissionDbId, logCallback);
@@ -67,9 +67,9 @@ public class SubmissionAnalysisController {
     }
 
     /**
-     * Lấy kết quả phân tích của một submission (async).
+     * Lấy kết quả phân tích của một submission.
      */
-    public CompletableFuture<Analysis> getAnalysisAsync(Integer submissionDbId) {
+    public CompletableFuture<Analysis> getAnalysis(Integer submissionDbId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return analysisService.getAnalysis(submissionDbId);
@@ -80,9 +80,9 @@ public class SubmissionAnalysisController {
     }
 
     /**
-     * Lấy tất cả analyses của một user (async).
+     * Lấy tất cả analyses của một user.
      */
-    public CompletableFuture<List<Analysis>> getAnalysesByHandleAsync(String handle) {
+    public CompletableFuture<List<Analysis>> getAnalysesByHandle(String handle) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return analysisService.getAnalysesByHandle(handle);
@@ -130,7 +130,7 @@ public class SubmissionAnalysisController {
     /**
      * Lấy kết quả phân tích của một submission (sync).
      */
-    public Analysis getAnalysis(Integer submissionDbId) throws Exception {
+    public Analysis getAnalysisSync(Integer submissionDbId) throws Exception {
         return analysisService.getAnalysis(submissionDbId);
     }
 }

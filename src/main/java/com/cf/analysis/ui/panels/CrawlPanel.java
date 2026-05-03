@@ -176,7 +176,7 @@ public class CrawlPanel extends JPanel {
         progressBar.setString("Đang crawl...");
         appendLog("\n=== BẮT ĐẦU CRAWL (PARALLEL MODE) ===", new Color(180, 180, 180));
 
-        controller.crawlAllUsersAsync(
+        controller.crawlAllUsers(
             // logCallback: CrawlService gọi callback này với mỗi dòng log
             // IMPORTANT: phải dùng invokeLater vì callback chạy trên background thread!
             message -> SwingUtilities.invokeLater(() -> {

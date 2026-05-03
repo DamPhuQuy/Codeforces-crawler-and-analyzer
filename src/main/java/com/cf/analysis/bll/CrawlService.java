@@ -1,5 +1,7 @@
 package com.cf.analysis.bll;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -52,15 +54,6 @@ public class CrawlService {
         this.settings = settings;
     }
 
-    // ==================== Crawl All ====================
-
-    /**
-     * Crawl tất cả users trong hệ thống.
-     * Chạy trên background thread → KHÔNG block UI.
-     *
-     * @param logCallback  Nhận mỗi dòng log để hiển thị trên UI
-     * @param doneCallback Nhận tổng số submission mới khi hoàn tất
-     */
     public void crawlAll(Consumer<String> logCallback, Consumer<Integer> doneCallback) {
         if (crawling) {
             log(logCallback, "Cảnh báo: Đang có crawl session đang chạy, vui lòng đợi...");
@@ -79,12 +72,22 @@ public class CrawlService {
                 }
 
                 log(logCallback, "Bắt đầu crawl " + users.size() + " nick...");
-                log(logCallback, "Khởi tạo browser...");
 
+                // Kiểm tra và tạo login session nếu chưa có
+                if (!isLoginSessionAvailable()) {
+                    log(logCallback, "Chưa có session đăng nhập!");
+                    log(logCallback, "Đang mở browser để đăng nhập...");
+                    log(logCallback, "Vui lòng đăng nhập thủ công trong browser.");
+
+                    crawler.saveLoginSession();
+                    log(logCallback, "Đã lưu session đăng nhập thành công!");
+                }
+
+                log(logCallback, "Khởi tạo browser...");
                 crawler.initBrowser();
 
                 for (User user : users) {
-                    if (!crawling) break; // Cho phép dừng giữa chừng
+                    if (!crawling) break;
                     totalNew += crawlSingleUser(user.getHandle(), logCallback);
                 }
 
@@ -103,39 +106,27 @@ public class CrawlService {
         }, "crawl-all-thread").start();
     }
 
-    // ==================== Crawl Single User ====================
-
-    /**
-     * Crawl một user cụ thể.
-     * Có thể gọi trực tiếp từ UI (blocking trên calling thread).
-     *
-     * @return Số lượng submission mới được thêm vào DB
-     */
     public int crawlSingleUser(String handle, Consumer<String> logCallback) {
         int newCount = 0;
 
         try {
             log(logCallback, "Crawling: " + handle + " ...");
 
-            // Lấy submission_id cao nhất đã có → chỉ crawl mới hơn
             long maxExistingId = submissionDAO.getMaxSubmissionId(handle);
-            int  maxCount      = settings.getMaxSubmissionsPerCrawl();
+            int maxCount = settings.getMaxSubmissionsPerCrawl();
 
-            // Crawl tuần tự với browser đã khởi tạo
             List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, maxExistingId);
 
             log(logCallback, "  -> Crawled " + results.size() + " submissions (sequential)");
 
-            // Lưu vào DB
             for (SubmissionSourceCode result : results) {
-                if (!crawling) break; // Kiểm tra stop flag
+                if (!crawling) break;
 
                 result.submission.setSourceCode(result.sourceCode);
                 submissionDAO.insert(result.submission);
                 newCount++;
             }
 
-            // Cập nhật thời gian crawl cuối
             userDAO.updateLastCrawl(handle, LocalDateTime.now());
             log(logCallback, "  " + handle + ": +" + newCount + " submissions");
 
@@ -192,5 +183,9 @@ public class CrawlService {
         if (cb == null) return;
         String time = timeFormat.format(LocalDateTime.now());
         cb.accept("[" + time + "] " + msg);
+    }
+
+    private boolean isLoginSessionAvailable() {
+        return Files.exists(Paths.get("state.json"));
     }
 }

@@ -195,6 +195,19 @@ public class CodeforcesApiCaller {
         sub.setPoints(s.has("points") ? s.get("points").getAsFloat() : 0);
         sub.setTestSet(parseTestSet(s));
 
+        // Parse problem information
+        if (s.has("problem") && !s.get("problem").isJsonNull()) {
+            JsonObject problem = s.getAsJsonObject("problem");
+
+            // Store problem name for display
+            if (problem.has("name")) {
+                sub.setProblemName(problem.get("name").getAsString());
+            }
+
+            // Note: problemId will be set later after inserting problem into database
+            // For now, we keep it as 0 (will be handled in CrawlService)
+        }
+
         return sub;
     }
 

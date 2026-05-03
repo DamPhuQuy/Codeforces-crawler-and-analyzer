@@ -64,7 +64,11 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             ps.setInt(idx++, safeInt(sub.getContestId()));
             ps.setInt(idx++, safeInt(sub.getCreationTimeSeconds()));
             ps.setInt(idx++, safeInt(sub.getRelativeTimeSeconds()));
-            ps.setInt(idx++, safeInt(sub.getProblemId()));
+
+            // Handle problemId: use 0 (dummy problem) if null or 0
+            Integer problemId = sub.getProblemId();
+            ps.setInt(idx++, (problemId == null || problemId == 0) ? 0 : problemId);
+
             ps.setString(idx++, programmingLanguage);
             ps.setString(idx++, sub.getVerdict() != null ? sub.getVerdict().name() : Verdict.TESTING.name());
             ps.setString(idx++, sub.getTestSet() != null ? sub.getTestSet().name() : TestSet.SAMPLES.name());

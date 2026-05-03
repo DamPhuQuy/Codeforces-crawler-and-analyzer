@@ -85,7 +85,10 @@ public class CodeforcesSourceCodeCrawler {
     }
 
     public List<SubmissionSourceCode> crawlUserSubmissions(String handle, int maxCount, long minSubId) {
-        initBrowser();
+        // Browser should be initialized by caller (CrawlService)
+        if (browser == null) {
+            throw new IllegalStateException("Browser not initialized. Call initBrowser() first.");
+        }
 
         try {
             List<Submission> submissions = apiCaller.getUserSubmissions(handle, maxCount, minSubId);

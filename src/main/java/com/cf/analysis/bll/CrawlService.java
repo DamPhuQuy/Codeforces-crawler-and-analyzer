@@ -115,6 +115,9 @@ public class CrawlService {
             long maxExistingId = submissionDAO.getMaxSubmissionId(handle);
             int maxCount = settings.getMaxSubmissionsPerCrawl();
 
+            log(logCallback, "  -> Existing max submission ID: " + maxExistingId);
+            log(logCallback, "  -> Max submissions to crawl: " + maxCount);
+
             List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, maxExistingId);
 
             log(logCallback, "  -> Crawled " + results.size() + " submissions (sequential)");
@@ -123,6 +126,10 @@ public class CrawlService {
                 if (!crawling) break;
 
                 result.submission.setSourceCode(result.sourceCode);
+
+                log(logCallback, "Submission " + result.submission.getId());
+                log(logCallback, "Source code: " + (result.sourceCode.length() > 100 ? result.sourceCode.substring(0, 100) + "..." : result.sourceCode));
+
                 submissionDAO.insert(result.submission);
                 newCount++;
             }

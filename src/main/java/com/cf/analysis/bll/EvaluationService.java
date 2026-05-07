@@ -17,16 +17,6 @@ import com.cf.analysis.model.user.Level;
 import com.cf.analysis.model.user.User;
 import com.cf.analysis.model.user.UserScore;
 
-/**
- * BLL - Tính toán điểm đánh giá tổng hợp năng lực cho từng user.
- *
- * Công thức tính điểm:
- * - DS Score      (30%) = Mức độ đa dạng CTDL đã dùng (logarithmic scale)
- * - Algo Score    (40%) = Đa dạng thuật toán + bonus cho thuật toán nâng cao
- * - AI-Free Score (30%) = 100% - tỷ lệ dùng AI, điều chỉnh bởi confidence
- *
- * Overall Score = DS*0.3 + Algo*0.4 + AIFree*0.3
- */
 public class EvaluationService {
 
     private final UserDAO       userDAO;
@@ -93,50 +83,10 @@ public class EvaluationService {
             return score;
         }
 
-        // ===== AI Usage Rate =====
-        long aiCount = analyses.stream()
-            .filter(a -> a.getAiResult() != null && a.getAiResult().getAiConfidence() > 0.5f)
-            .count();
-        double aiRate = (double) aiCount / analyses.size();
-        score.setAiDetectedCount((int) aiCount);
-        score.setAiUsageRate(aiRate);
-
-        // AI-Free Score: nhiều AI → điểm thấp
-        double avgConf = analyses.stream()
-            .filter(a -> a.getAiResult() != null)
-            .mapToDouble(a -> a.getAiResult().getAiConfidence())
-            .average()
-            .orElse(0.0);
-        double aiScore = (1.0 - aiRate) * 100.0 * (1.0 - avgConf * 0.15);
-        score.setAiScore(clamp(aiScore));
-
-        // ===== DS Score =====
-        Set<String> uniqueDS = new HashSet<>();
-        for (Analysis a : analyses) {
-            if (a.getComplexityAnalysis() != null && a.getComplexityAnalysis().getDataStructures() != null) {
-                uniqueDS.addAll(a.getComplexityAnalysis().getDataStructures());
-            }
-        }
-        score.setDsScore(clamp(logScore(uniqueDS.size(), MAX_EXPECTED_DS)));
-        score.setTopDataStructure(getMostCommon(analyses, true));
-
-        // ===== Algorithm Score + Advanced Bonus =====
-        Set<String> uniqueAlgos = new HashSet<>();
-        for (Analysis a : analyses) {
-            if (a.getComplexityAnalysis() != null && a.getComplexityAnalysis().getAlgorithms() != null) {
-                uniqueAlgos.addAll(a.getComplexityAnalysis().getAlgorithms());
-            }
-        }
-        double algoBase  = logScore(uniqueAlgos.size(), MAX_EXPECTED_ALGO);
-        double advBonus  = calculateAdvancedBonus(analyses);
-        score.setAlgorithmScore(clamp(algoBase + advBonus));
-        score.setTopAlgorithm(getMostCommon(analyses, false));
-
-        // ===== Overall Score =====
-        double overall = score.getDsScore() * 0.30
-                       + score.getAlgorithmScore() * 0.40
-                       + score.getAiScore() * 0.30;
-        score.setOverallScore(clamp(overall));
+        calculateAiScore(score, analyses);
+        calculateDsScore(score, analyses);
+        calculateAlgorithmScore(score, analyses);
+        calculateOverallScore(score);
 
         score.computeLevel();
 
@@ -179,6 +129,65 @@ public class EvaluationService {
 
     // ==================== Score Helpers ====================
 
+    private void calculateAiScore(UserScore score, List<Analysis> analyses) {
+        long aiCount = analyses.stream()
+            .filter(a -> a.getAiResult() != null && a.getAiResult().getAiConfidence() > 0.5f)
+            .count();
+        double aiRate = (double) aiCount / analyses.size();
+        score.setAiDetectedCount((int) aiCount);
+        score.setAiUsageRate(aiRate);
+
+        // AI-Free Score: nhiều AI → điểm thấp
+        double avgConf = analyses.stream()
+            .filter(a -> a.getAiResult() != null)
+            .mapToDouble(a -> a.getAiResult().getAiConfidence())
+            .average()
+            .orElse(0.0);
+        double aiScore = (1.0 - aiRate) * 100.0 * (1.0 - avgConf * 0.15);
+        score.setAiScore(clamp(aiScore));
+    }
+
+    private void calculateDsScore(UserScore score, List<Analysis> analyses) {
+        Set<String> uniqueDS = new HashSet<>();
+        for (Analysis a : analyses) {
+            uniqueDS.addAll(getDataStructures(a));
+        }
+        score.setDsScore(clamp(logScore(uniqueDS.size(), MAX_EXPECTED_DS)));
+        score.setTopDataStructure(getMostCommon(analyses, true));
+    }
+
+    private void calculateAlgorithmScore(UserScore score, List<Analysis> analyses) {
+        Set<String> uniqueAlgos = new HashSet<>();
+        for (Analysis a : analyses) {
+            uniqueAlgos.addAll(getAlgorithms(a));
+        }
+        double algoBase  = logScore(uniqueAlgos.size(), MAX_EXPECTED_ALGO);
+        double advBonus  = calculateAdvancedBonus(analyses);
+        score.setAlgorithmScore(clamp(algoBase + advBonus));
+        score.setTopAlgorithm(getMostCommon(analyses, false));
+    }
+
+    private void calculateOverallScore(UserScore score) {
+        double overall = score.getDsScore() * 0.30
+                       + score.getAlgorithmScore() * 0.40
+                       + score.getAiScore() * 0.30;
+        score.setOverallScore(clamp(overall));
+    }
+
+    private List<String> getAlgorithms(Analysis a) {
+        if (a.getComplexityAnalysis() == null || a.getComplexityAnalysis().getAlgorithms() == null) {
+            return List.of();
+        }
+        return a.getComplexityAnalysis().getAlgorithms();
+    }
+
+    private List<String> getDataStructures(Analysis a) {
+        if (a.getComplexityAnalysis() == null || a.getComplexityAnalysis().getDataStructures() == null) {
+            return List.of();
+        }
+        return a.getComplexityAnalysis().getDataStructures();
+    }
+
     /**
      * Logarithmic scaling: 0 items = 0 điểm, maxExp items ≈ 70 điểm, 2x maxExp ≈ 90 điểm.
      * Không bao giờ đạt 100 quá dễ.
@@ -196,8 +205,7 @@ public class EvaluationService {
     private double calculateAdvancedBonus(List<Analysis> analyses) {
         Set<String> foundAdv = new HashSet<>();
         for (Analysis a : analyses) {
-            if (a.getComplexityAnalysis() == null || a.getComplexityAnalysis().getAlgorithms() == null) continue;
-            for (String algo : a.getComplexityAnalysis().getAlgorithms()) {
+            for (String algo : getAlgorithms(a)) {
                 for (String adv : ADVANCED_ALGOS) {
                     if (algo.toLowerCase().contains(adv.toLowerCase())) {
                         foundAdv.add(adv);
@@ -215,11 +223,9 @@ public class EvaluationService {
     private String getMostCommon(List<Analysis> analyses, boolean isDS) {
         Map<String, Integer> freq = new HashMap<>();
         for (Analysis a : analyses) {
-            if (a.getComplexityAnalysis() == null) continue;
             List<String> items = isDS
-                ? a.getComplexityAnalysis().getDataStructures()
-                : a.getComplexityAnalysis().getAlgorithms();
-            if (items == null) continue;
+                ? getDataStructures(a)
+                : getAlgorithms(a);
             for (String item : items) freq.merge(item, 1, Integer::sum);
         }
         return freq.entrySet().stream()

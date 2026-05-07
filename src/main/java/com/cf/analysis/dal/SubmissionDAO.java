@@ -91,7 +91,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
                    s.memory_consumed_bytes, s.points, s.source_code,
                    s.submitted_at, s.crawled_at,
-                   (a.id IS NOT NULL OR s.analyzed) AS " + ANALYZED_COLUMN + "
+                   (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             WHERE s.user_handle = ?
@@ -104,7 +104,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 Submission sub = mapRow(rs);
-                sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
                 list.add(sub);
             }
         }
@@ -120,7 +119,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
                    s.memory_consumed_bytes, s.points, s.source_code,
                    s.submitted_at, s.crawled_at,
-                   (a.id IS NOT NULL OR s.analyzed) AS " + ANALYZED_COLUMN + "
+                   (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             ORDER BY s.submitted_at DESC
@@ -130,7 +129,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Submission sub = mapRow(rs);
-                sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
                 list.add(sub);
             }
         }
@@ -143,7 +141,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             SELECT id, user_handle, language, contest_id, creation_time_seconds,
                    relative_time_seconds, problem_id, programming_language, verdict,
                    test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                   points, source_code, submitted_at, crawled_at, " + ANALYZED_COLUMN
+                   points, source_code, submitted_at, crawled_at, analyzed
             FROM submissions
             WHERE id = ?
             """;
@@ -179,13 +177,13 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
 
     public List<Submission> findUnanalyzed() throws SQLException {
         String sql = """
-                        SELECT s.id, s.user_handle, s.language, s.contest_id,
-                                     s.creation_time_seconds, s.relative_time_seconds,
-                                     s.problem_id, s.programming_language, s.verdict,
-                                     s.test_set, s.passed_test_count, s.time_consumed_millis,
-                                     s.memory_consumed_bytes, s.points, s.source_code,
-                                     s.submitted_at, s.crawled_at, s." + ANALYZED_COLUMN
-                        FROM submissions s
+            SELECT s.id, s.user_handle, s.language, s.contest_id,
+                   s.creation_time_seconds, s.relative_time_seconds,
+                   s.problem_id, s.programming_language, s.verdict,
+                   s.test_set, s.passed_test_count, s.time_consumed_millis,
+                   s.memory_consumed_bytes, s.points, s.source_code,
+                   s.submitted_at, s.crawled_at, s.analyzed
+            FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
             WHERE a.id IS NULL
               AND s.source_code IS NOT NULL
@@ -248,7 +246,14 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
         sub.setMemoryConsumedBytes(rs.getInt("memory_consumed_bytes"));
         sub.setPoints(rs.getFloat("points"));
         sub.setSourceCode(rs.getString("source_code"));
-        sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
+
+        // Safely read analyzed column - check if it exists in ResultSet
+        try {
+            sub.setAnalyzed(rs.getBoolean(ANALYZED_COLUMN));
+        } catch (SQLException e) {
+            // Column doesn't exist in this query, default to false
+            sub.setAnalyzed(false);
+        }
 
         Timestamp submittedTs = rs.getTimestamp("submitted_at");
         if (submittedTs != null) sub.setSubmittedAt(submittedTs.toLocalDateTime());

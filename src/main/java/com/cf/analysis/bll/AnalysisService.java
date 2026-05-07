@@ -126,6 +126,110 @@ public class AnalysisService {
         }, "analysis-thread").start();
     }
 
+    /**
+     * Phân tích lại một submission đã có kết quả (re-evaluation).
+     * Xóa kết quả cũ và phân tích lại từ đầu.
+     *
+     * @param submissionDbId  ID của submission trong DB
+     * @param logCallback     Callback để log tiến trình
+     * @return Kết quả Analysis mới
+     */
+    public Analysis reanalyzeSubmission(Integer submissionDbId, Consumer<String> logCallback) throws Exception {
+        Submission sub = submissionDAO.findById(submissionDbId);
+        if (sub == null) {
+            throw new IllegalArgumentException("Không tìm thấy submission id=" + submissionDbId);
+        }
+
+        log(logCallback, "🔄 Phân tích lại: " + sub.getProblemName() + " (" + sub.getShortLanguage() + ")...");
+
+        // Xóa kết quả cũ nếu có
+        Analysis oldAnalysis = analysisDAO.findBySubmissionId(submissionDbId);
+        if (oldAnalysis != null) {
+            analysisDAO.delete(oldAnalysis.getId());
+            log(logCallback, "  🗑️ Đã xóa kết quả phân tích cũ");
+        }
+
+        // Phân tích lại
+        Analysis result = getAnalyzer().analyze(sub);
+        analysisDAO.insert(result);
+
+        log(logCallback, "  ✅ Hoàn tất phân tích lại");
+        return result;
+    }
+
+    /**
+     * Phân tích lại tất cả submissions của một user.
+     * Dùng khi muốn refresh toàn bộ kết quả đánh giá.
+     *
+     * @param handle           Handle của user
+     * @param logCallback      Log từng bước
+     * @param progressCallback (current, total) để cập nhật progress bar
+     */
+    public void reanalyzeUserSubmissions(String handle, Consumer<String> logCallback, BiConsumer<Integer, Integer> progressCallback) {
+        if (analyzing) {
+            log(logCallback, "⚠️ Đang có analysis session đang chạy!");
+            return;
+        }
+
+        new Thread(() -> {
+            analyzing = true;
+            try {
+                List<Submission> submissions = submissionDAO.findByHandle(handle);
+                List<Submission> toAnalyze = submissions.stream()
+                    .filter(s -> s.getSourceCode() != null && !s.getSourceCode().isEmpty())
+                    .toList();
+
+                int total = toAnalyze.size();
+
+                if (total == 0) {
+                    log(logCallback, "ℹ️ Không có submission nào có source code để phân tích.");
+                    return;
+                }
+
+                log(logCallback, "🔄 Bắt đầu phân tích lại " + total + " submissions của " + handle + "...");
+
+                for (int i = 0; i < toAnalyze.size(); i++) {
+                    if (!analyzing) break;
+
+                    Submission sub = toAnalyze.get(i);
+                    try {
+                        log(logCallback, "[" + (i + 1) + "/" + total + "] " + sub.getProblemName());
+
+                        // Xóa kết quả cũ nếu có
+                        Analysis oldAnalysis = analysisDAO.findBySubmissionId(sub.getId());
+                        if (oldAnalysis != null) {
+                            analysisDAO.delete(oldAnalysis.getId());
+                        }
+
+                        // Phân tích lại
+                        Analysis result = getAnalyzer().analyze(sub);
+                        analysisDAO.insert(result);
+
+                        if (progressCallback != null) {
+                            progressCallback.accept(i + 1, total);
+                        }
+
+                        // Delay nhỏ tránh spam Gemini API
+                        Thread.sleep(1200);
+
+                    } catch (Exception e) {
+                        log(logCallback, "  ❌ Lỗi: " + e.getMessage());
+                    }
+                }
+
+                log(logCallback, "✅ Phân tích lại hoàn tất!");
+                if (progressCallback != null) {
+                    progressCallback.accept(total, total);
+                }
+
+            } catch (SQLException e) {
+                log(logCallback, "❌ Lỗi DB: " + e.getMessage());
+            } finally {
+                analyzing = false;
+            }
+        }, "reanalysis-thread").start();
+    }
+
     // ==================== Getters ====================
 
     /**
@@ -148,6 +252,37 @@ public class AnalysisService {
      */
     public List<Submission> getSubmissionsByHandle(String handle) throws SQLException {
         return submissionDAO.findByHandle(handle);
+    }
+
+    /**
+     * Lấy source code của một submission từ DB.
+     * @param submissionDbId ID của submission trong DB
+     * @return Source code, hoặc null nếu không tìm thấy
+     */
+    public String getSourceCode(Integer submissionDbId) throws SQLException {
+        Submission sub = submissionDAO.findById(submissionDbId);
+        return sub != null ? sub.getSourceCode() : null;
+    }
+
+    /**
+     * Lấy submission với source code để đánh giá.
+     * @param submissionDbId ID của submission trong DB
+     * @return Submission object với đầy đủ thông tin, bao gồm source code
+     */
+    public Submission getSubmissionForEvaluation(Integer submissionDbId) throws SQLException {
+        return submissionDAO.findById(submissionDbId);
+    }
+
+    /**
+     * Lấy tất cả submissions đã được phân tích (có source code và có kết quả analysis).
+     * Dùng để đánh giá lại hoặc xem lại kết quả.
+     */
+    public List<Submission> getAnalyzedSubmissions(String handle) throws SQLException {
+        List<Submission> allSubs = submissionDAO.findByHandle(handle);
+        return allSubs.stream()
+            .filter(Submission::isAnalyzed)
+            .filter(s -> s.getSourceCode() != null && !s.getSourceCode().isEmpty())
+            .toList();
     }
 
     public void stopAnalysis()    { analyzing = false; }

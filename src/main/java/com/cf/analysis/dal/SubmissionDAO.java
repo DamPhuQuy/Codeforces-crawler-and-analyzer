@@ -30,10 +30,10 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                 (id, user_handle, language, contest_id, creation_time_seconds,
                  relative_time_seconds, problem_id, programming_language, verdict,
                  test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                 points, source_code, problem_name, submitted_at, crawled_at, analyzed)
+                 points, source_code, problemset_name, submitted_at, crawled_at, analyzed)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ON CONFLICT (id) DO UPDATE SET
-                problem_name = EXCLUDED.problem_name,
+                problemset_name = EXCLUDED.problemset_name,
                 submitted_at = EXCLUDED.submitted_at
             """;
 
@@ -42,7 +42,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                 (user_handle, language, contest_id, creation_time_seconds,
                  relative_time_seconds, problem_id, programming_language, verdict,
                  test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                 points, source_code, problem_name, submitted_at, crawled_at, analyzed)
+                 points, source_code, problemset_name, submitted_at, crawled_at, analyzed)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ON CONFLICT DO NOTHING
             """;
@@ -92,7 +92,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.creation_time_seconds, s.relative_time_seconds,
                    s.problem_id, s.programming_language, s.verdict,
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
-                   s.memory_consumed_bytes, s.points, s.source_code, s.problem_name,
+                   s.memory_consumed_bytes, s.points, s.source_code, s.problemset_name,
                    s.submitted_at, s.crawled_at,
                    (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
@@ -120,7 +120,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.creation_time_seconds, s.relative_time_seconds,
                    s.problem_id, s.programming_language, s.verdict,
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
-                   s.memory_consumed_bytes, s.points, s.source_code, s.problem_name,
+                   s.memory_consumed_bytes, s.points, s.source_code, s.problemset_name,
                    s.submitted_at, s.crawled_at,
                    (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
@@ -144,7 +144,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             SELECT id, user_handle, language, contest_id, creation_time_seconds,
                    relative_time_seconds, problem_id, programming_language, verdict,
                    test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                   points, source_code, problem_name, submitted_at, crawled_at, analyzed
+                   points, source_code, problemset_name, submitted_at, crawled_at, analyzed
             FROM submissions
             WHERE id = ?
             """;
@@ -184,7 +184,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.creation_time_seconds, s.relative_time_seconds,
                    s.problem_id, s.programming_language, s.verdict,
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
-                   s.memory_consumed_bytes, s.points, s.source_code, s.problem_name,
+                   s.memory_consumed_bytes, s.points, s.source_code, s.problemset_name,
                    s.submitted_at, s.crawled_at, s.analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
@@ -249,7 +249,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
         sub.setMemoryConsumedBytes(rs.getInt("memory_consumed_bytes"));
         sub.setPoints(rs.getFloat("points"));
         sub.setSourceCode(rs.getString("source_code"));
-        sub.setProblemName(rs.getString("problem_name"));
+        sub.setProblemName(rs.getString("problemset_name"));
 
         // Safely read analyzed column - check if it exists in ResultSet
         try {

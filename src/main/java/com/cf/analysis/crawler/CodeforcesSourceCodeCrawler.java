@@ -23,6 +23,8 @@ public class CodeforcesSourceCodeCrawler {
     private final CodeforcesApiCaller apiCaller;
     private Playwright playwright;
     private Browser browser;
+    private BrowserContext context;
+    private Page page;
 
     public CodeforcesSourceCodeCrawler(CodeforcesApiCaller apiCaller) {
         this.apiCaller = apiCaller;
@@ -59,16 +61,38 @@ public class CodeforcesSourceCodeCrawler {
                 .setHeadless(false)
                 .setArgs(List.of("--disable-blink-features=AutomationControlled")));
 
-        System.out.println("Browser initialized (sequential mode with rate limiting)");
+        // Tạo context và page một lần, reuse cho tất cả submissions
+        context = browser.newContext(new Browser.NewContextOptions()
+                .setStorageStatePath(Paths.get("state.json")));
+        page = context.newPage();
+
+        System.out.println("Browser initialized with persistent context");
     }
 
     public void closeBrowser() {
+        if (page != null) {
+            try {
+                page.close();
+            } catch (Exception e) {
+                System.err.println("Error closing page: " + e.getMessage());
+            }
+            page = null;
+        }
+        if (context != null) {
+            try {
+                context.close();
+            } catch (Exception e) {
+                System.err.println("Error closing context: " + e.getMessage());
+            }
+            context = null;
+        }
         if (browser != null) {
             try {
                 browser.close();
             } catch (Exception e) {
                 System.err.println("Error closing browser: " + e.getMessage());
             }
+            browser = null;
         }
         if (playwright != null) {
             try {
@@ -76,10 +100,8 @@ public class CodeforcesSourceCodeCrawler {
             } catch (Exception e) {
                 System.err.println("Error closing playwright: " + e.getMessage());
             }
+            playwright = null;
         }
-
-        playwright = null;
-        browser = null;
 
         System.out.println("Browser closed");
     }
@@ -139,18 +161,18 @@ public class CodeforcesSourceCodeCrawler {
     }
 
     private SubmissionSourceCode crawlSingleSubmission(Submission submission) {
-        BrowserContext context = null;
-        Page page = null;
-
         try {
-            context = browser.newContext(new Browser.NewContextOptions()
-                    .setStorageStatePath(Paths.get("state.json")));
-            page = context.newPage();
-
             String url = buildSubmissionUrl(submission);
             page.navigate(url, new Page.NavigateOptions()
                     .setTimeout(PAGE_TIMEOUT_MS));
 
+            // Kiểm tra xem có bị redirect về login page không
+            String currentUrl = page.url();
+            if (currentUrl.contains("/enter") || currentUrl.contains("login")) {
+                throw new RuntimeException("Session hết hạn - bị redirect về login page. Cần đăng nhập lại!");
+            }
+
+            // Chờ selector với timeout
             page.waitForSelector("#program-source-text", new Page.WaitForSelectorOptions()
                     .setTimeout(SELECTOR_TIMEOUT_MS));
             String sourceCode = page.locator("#program-source-text").innerText();
@@ -160,22 +182,13 @@ public class CodeforcesSourceCodeCrawler {
 
         } catch (Exception e) {
             System.err.println("✗ Failed to crawl submission " + submission.getId() + ": " + e.getMessage());
+
+            // Log thêm thông tin debug
+            try {
+                System.err.println("   Current URL: " + page.url());
+            } catch (Exception ignored) {}
+
             return null;
-        } finally {
-            if (page != null) {
-                try {
-                    page.close();
-                } catch (Exception e) {
-                    // Ignore close errors
-                }
-            }
-            if (context != null) {
-                try {
-                    context.close();
-                } catch (Exception e) {
-                    // Ignore close errors
-                }
-            }
         }
     }
 

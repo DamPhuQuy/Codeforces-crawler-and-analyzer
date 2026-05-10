@@ -288,8 +288,6 @@ public class AnalysisService {
     public void stopAnalysis()    { analyzing = false; }
     public boolean isAnalyzing()  { return analyzing; }
 
-    // ==================== Util ====================
-
     private void log(Consumer<String> cb, String msg) {
         if (cb != null) cb.accept(msg);
     }

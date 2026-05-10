@@ -25,34 +25,22 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/**
- * Phân tích source code bằng Google Gemini AI.
- *
- * Sử dụng Gemini REST API trực tiếp (không dùng SDK để tránh dependency issues).
- * Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
- *
- * Phân tích 6 tiêu chí phát hiện AI-generated code:
- * 1. too_clean       - Code quá sạch
- * 2. textbook_comments - Comment kiểu sách giáo khoa
- * 3. perfect_naming  - Đặt tên quá chuẩn
- * 4. ai_pattern      - Pattern giống AI
- * 5. too_perfect     - Không có lỗi vặt
- * 6. wrong_style     - Style không giống CP
- */
 public class GeminiAnalyzer {
 
     private static final String GEMINI_URL =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+    private static final int MAX_RETRIES = 3;
+    private static final int INITIAL_BACKOFF_MS = 1000;
 
-    private String     apiKey;
+    private String apiKey;
     private final OkHttpClient httpClient;
-    private final Gson         gson;
+    private final Gson gson;
 
     public GeminiAnalyzer(String apiKey) {
         this.apiKey = apiKey;
         this.httpClient = new OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS) // Gemini có thể chậm
+            .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
@@ -60,12 +48,6 @@ public class GeminiAnalyzer {
 
     public void setApiKey(String apiKey) { this.apiKey = apiKey; }
 
-    /**
-     * Phân tích một submission bằng Gemini AI.
-     *
-     * @param submission Submission cần phân tích (phải có sourceCode)
-     * @return Analysis object chứa kết quả đầy đủ
-     */
     public Analysis analyze(Submission submission) throws IOException {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("Chưa cấu hình Gemini API Key! Vào tab Cài Đặt để nhập key.");
@@ -74,19 +56,13 @@ public class GeminiAnalyzer {
             throw new IllegalArgumentException("Submission #" + submission.getSubmissionId() + " không có source code!");
         }
 
-        String prompt      = buildPrompt(submission);
+        String prompt = buildPrompt(submission);
         String rawResponse = callGemini(prompt);
         return parseResponse(rawResponse, submission.getId());
     }
 
-    // ==================== Prompt Builder ====================
 
-    /**
-     * Xây dựng prompt chi tiết gửi cho Gemini.
-     * Yêu cầu trả về JSON với format chính xác để parse được.
-     */
     private String buildPrompt(Submission submission) {
-        // Giới hạn source code nếu quá dài (Gemini có token limit)
         String code = submission.getSourceCode();
         if (code.length() > 8000) {
             code = code.substring(0, 8000) + "\n// ... (code bị cắt do quá dài)";
@@ -104,6 +80,8 @@ public class GeminiAnalyzer {
             - KHÔNG được kết luận chắc chắn code có sử dụng AI
             - Chỉ được đưa ra "mức độ nghi ngờ" (ai_suspicion_score từ 0 → 1)
             - Mọi nhận định phải có evidence cụ thể
+            - Hãy khách quan: code tốt KHÔNG tự động nghĩa là AI-generated
+            - Chỉ đánh giá cao khi có NHIỀU dấu hiệu bất thường cùng lúc
 
             ---
 
@@ -134,7 +112,7 @@ public class GeminiAnalyzer {
                 "highlighted_lines": [],
                 "time_complexity": "",
                 "space_complexity": "",
-                "difficulty_score": 1-10,
+                "difficulty_score": 5,
                 "confidence": 0.0,
                 "explanation": ""
             }
@@ -144,7 +122,8 @@ public class GeminiAnalyzer {
             Hướng dẫn:
 
             - ai_suspicion_score:
-            = tổng hợp các indicator (không chỉ 1 yếu tố)
+            = trung bình các indicator.score (KHÔNG phải tổng)
+            = chỉ cao (>0.6) khi có NHIỀU dấu hiệu bất thường
 
             - confidence:
             = độ chắc chắn của phân tích (không phải AI detection)
@@ -157,13 +136,13 @@ public class GeminiAnalyzer {
 
             ---
 
-            Các dấu hiệu cần chú ý:
+            Các dấu hiệu cần chú ý (mỗi indicator có score 0.0-1.0):
 
             1. too_clean:
-            code cực kỳ sạch, không có dấu vết debug
+            code cực kỳ sạch, không có dấu vết debug/trial-error
 
             2. textbook_comments:
-            comment mang tính giáo trình
+            comment mang tính giáo trình, giải thích quá chi tiết
 
             3. perfect_naming:
             tên biến quá đầy đủ (adjacencyList vs adj)
@@ -172,7 +151,7 @@ public class GeminiAnalyzer {
             structure giống template AI (helper functions, abstraction không cần thiết)
 
             5. too_perfect:
-            không có lỗi nhỏ, không có code thừa
+            không có lỗi nhỏ, không có code thừa, quá hoàn hảo
 
             6. wrong_style:
             style không giống CP (Java verbose, class naming chuẩn)
@@ -188,12 +167,42 @@ public class GeminiAnalyzer {
             );
     }
 
-    // ==================== API Call ====================
+
+    private String callGemini(String prompt) throws IOException {
+        IOException lastException = null;
+
+        for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                return callGeminiOnce(prompt);
+            } catch (IOException e) {
+                lastException = e;
+
+                // Không retry nếu là lỗi client (4xx)
+                if (e.getMessage().contains("HTTP 4")) {
+                    throw e;
+                }
+
+                // Exponential backoff
+                if (attempt < MAX_RETRIES - 1) {
+                    int backoffMs = INITIAL_BACKOFF_MS * (1 << attempt);
+                    System.err.println("Gemini API lỗi (attempt " + (attempt + 1) + "/" + MAX_RETRIES + "), retry sau " + backoffMs + "ms: " + e.getMessage());
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("Bị interrupt khi retry", ie);
+                    }
+                }
+            }
+        }
+
+        throw new IOException("Gemini API thất bại sau " + MAX_RETRIES + " lần thử", lastException);
+    }
 
     /**
-     * Gọi Gemini REST API và trả về text response.
+     * Thực hiện một lần gọi API đến Gemini.
      */
-    private String callGemini(String prompt) throws IOException {
+    private String callGeminiOnce(String prompt) throws IOException {
         // Xây dựng request body theo Gemini API format
         JsonObject requestBody = new JsonObject();
 
@@ -211,6 +220,7 @@ public class GeminiAnalyzer {
         JsonObject genConfig = new JsonObject();
         genConfig.addProperty("temperature",     0.1);
         genConfig.addProperty("maxOutputTokens", 2048);
+        genConfig.addProperty("responseMimeType", "application/json");
         requestBody.add("generationConfig", genConfig);
 
         // Build HTTP request
@@ -235,10 +245,6 @@ public class GeminiAnalyzer {
         }
     }
 
-    /**
-     * Trích xuất text từ JSON response của Gemini.
-     * Response format: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
-     */
     private String extractTextFromResponse(String jsonBody) throws IOException {
         try {
             JsonObject obj        = gson.fromJson(jsonBody, JsonObject.class);
@@ -259,25 +265,29 @@ public class GeminiAnalyzer {
             }
 
             JsonObject respContent = candidate.getAsJsonObject("content");
-            JsonArray  respParts   = respContent.getAsJsonArray("parts");
-
-            if (respParts == null || respParts.isEmpty()) {
+            if (respContent == null) {
                 throw new IOException("Gemini response không có content!");
             }
 
-            return respParts.get(0).getAsJsonObject().get("text").getAsString();
+            JsonArray respParts = respContent.getAsJsonArray("parts");
+            if (respParts == null || respParts.isEmpty()) {
+                throw new IOException("Gemini response không có parts!");
+            }
+
+            JsonElement textElement = respParts.get(0).getAsJsonObject().get("text");
+            if (textElement == null || textElement.isJsonNull()) {
+                throw new IOException("Gemini response không có text!");
+            }
+
+            return textElement.getAsString();
 
         } catch (JsonParseException e) {
             throw new IOException("Không parse được Gemini response: " + e.getMessage());
+        } catch (NullPointerException e) {
+            throw new IOException("Gemini response thiếu field bắt buộc: " + e.getMessage());
         }
     }
 
-    // ==================== Response Parser ====================
-
-    /**
-     * Parse JSON text từ Gemini thành Analysis object.
-     * Robust - không crash nếu thiếu field nào.
-     */
     private Analysis parseResponse(String rawText, long submissionId) {
         Analysis analysis = new Analysis();
         analysis.setSubmissionId(submissionId);
@@ -315,13 +325,13 @@ public class GeminiAnalyzer {
 
         } catch (Exception e) {
             // Nếu parse thất bại, set giá trị an toàn và ghi lỗi vào explanation
-            System.err.println("⚠️ Lỗi parse Gemini response: " + e.getMessage());
+            System.err.println("Lỗi parse Gemini response: " + e.getMessage());
 
             analysis.setComplexityAnalysis(new ComplexityAnalysis());
             analysis.setAiResult(new AiResult());
 
             AnalysisOutput output = new AnalysisOutput();
-            output.setExplanation("⚠️ Lỗi phân tích: " + e.getMessage()
+            output.setExplanation("Lỗi phân tích: " + e.getMessage()
                                     + "\n\nRaw response:\n" + rawText.substring(0, Math.min(500, rawText.length())));
             output.setRawJson(rawText);
             analysis.setAnalysisOutput(output);
@@ -330,11 +340,13 @@ public class GeminiAnalyzer {
         return analysis;
     }
 
-    /**
-     * Trích xuất JSON từ text, xử lý trường hợp Gemini thêm markdown.
-     */
     private String extractJson(String text) {
         text = text.trim();
+
+        // Nếu đã là JSON thuần (bắt đầu bằng {)
+        if (text.startsWith("{")) {
+            return text;
+        }
 
         // Thử tìm ```json ... ```
         if (text.contains("```json")) {
@@ -350,7 +362,7 @@ public class GeminiAnalyzer {
             if (end > start) return text.substring(start, end).trim();
         }
 
-        // Tìm { ... } đầu tiên và cuối cùng
+        // Tìm { ... } đầu tiên và cuối cùng (fallback)
         int braceStart = text.indexOf('{');
         int braceEnd   = text.lastIndexOf('}');
         if (braceStart != -1 && braceEnd > braceStart) {
@@ -359,8 +371,6 @@ public class GeminiAnalyzer {
 
         return text;
     }
-
-    // ==================== Parse Helpers ====================
 
     private List<String> parseStringList(JsonObject obj, String key) {
         List<String> list = new ArrayList<>();
@@ -375,49 +385,55 @@ public class GeminiAnalyzer {
     private AiIndicators parseIndicators(JsonObject indicators) {
         AiIndicators ai = new AiIndicators();
 
-        Indicator tooClean = new Indicator(
-            getIndicatorDetected(indicators, "too_clean"),
-            getIndicatorEvidence(indicators, "too_clean")
-        );
-        ai.setTooClean(tooClean);
-
-        Indicator textbookComments = new Indicator(
-            getIndicatorDetected(indicators, "textbook_comments"),
-            getIndicatorEvidence(indicators, "textbook_comments")
-        );
-        ai.setTextbookComments(textbookComments);
-
-        Indicator perfectNaming = new Indicator(
-            getIndicatorDetected(indicators, "perfect_naming"),
-            getIndicatorEvidence(indicators, "perfect_naming")
-        );
-        ai.setPerfectNaming(perfectNaming);
-
-        Indicator aiPattern = new Indicator(
-            getIndicatorDetected(indicators, "ai_pattern"),
-            getIndicatorEvidence(indicators, "ai_pattern")
-        );
-        ai.setAiPattern(aiPattern);
-
-        Indicator tooPerfect = new Indicator(
-            getIndicatorDetected(indicators, "too_perfect"),
-            getIndicatorEvidence(indicators, "too_perfect")
-        );
-        ai.setTooPerfect(tooPerfect);
-
-        Indicator wrongStyle = new Indicator(
-            getIndicatorDetected(indicators, "wrong_style"),
-            getIndicatorEvidence(indicators, "wrong_style")
-        );
-        ai.setWrongStyle(wrongStyle);
+        ai.setTooClean(parseIndicator(indicators, "too_clean"));
+        ai.setTextbookComments(parseIndicator(indicators, "textbook_comments"));
+        ai.setPerfectNaming(parseIndicator(indicators, "perfect_naming"));
+        ai.setAiPattern(parseIndicator(indicators, "ai_pattern"));
+        ai.setTooPerfect(parseIndicator(indicators, "too_perfect"));
+        ai.setWrongStyle(parseIndicator(indicators, "wrong_style"));
 
         return ai;
+    }
+
+    private Indicator parseIndicator(JsonObject indicators, String key) {
+        if (!indicators.has(key) || !indicators.get(key).isJsonObject()) {
+            return new Indicator(false, "");
+        }
+
+        JsonObject obj = indicators.getAsJsonObject(key);
+
+        // Lấy score (ưu tiên) hoặc detected (fallback)
+        float score = 0.0f;
+        if (obj.has("score") && !obj.get("score").isJsonNull()) {
+            score = obj.get("score").getAsFloat();
+        } else if (obj.has("detected") && !obj.get("detected").isJsonNull()) {
+            score = obj.get("detected").getAsBoolean() ? 1.0f : 0.0f;
+        }
+
+        // Lấy evidence
+        String evidence = "";
+        if (obj.has("evidence") && !obj.get("evidence").isJsonNull()) {
+            evidence = obj.get("evidence").getAsString();
+        }
+
+        // Detected = true nếu score > 0.5
+        boolean detected = score > 0.5f;
+
+        return new Indicator(detected, evidence);
     }
 
     private boolean getIndicatorDetected(JsonObject indicators, String key) {
         if (!indicators.has(key) || !indicators.get(key).isJsonObject()) return false;
         JsonObject o = indicators.getAsJsonObject(key);
-        return o.has("detected") && o.get("detected").getAsBoolean();
+
+        // Ưu tiên score, fallback sang detected
+        if (o.has("score") && !o.get("score").isJsonNull()) {
+            return o.get("score").getAsFloat() > 0.5f;
+        }
+        if (o.has("detected") && !o.get("detected").isJsonNull()) {
+            return o.get("detected").getAsBoolean();
+        }
+        return false;
     }
 
     private String getIndicatorEvidence(JsonObject indicators, String key) {

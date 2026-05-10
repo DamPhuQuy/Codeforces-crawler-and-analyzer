@@ -1,7 +1,9 @@
 package com.cf.analysis.bll;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -17,18 +19,10 @@ import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler.SubmissionSourceCode;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.model.user.User;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-/**
- * BLL - Nghiệp vụ Crawl submission.
- *
- * Hỗ trợ:
- * - crawlAll()       : Crawl tất cả users ngay lập tức (background thread)
- * - crawlSingleUser(): Crawl một user cụ thể
- * - startSchedule()  : Bật lịch crawl tự động mỗi X giờ
- * - stopSchedule()   : Tắt lịch
- *
- * Tất cả public methods CÓ LOG CALLBACK để cập nhật UI real-time.
- */
 public class CrawlService {
 
     private final UserDAO userDAO;
@@ -73,7 +67,7 @@ public class CrawlService {
 
                 log(logCallback, "Bat dau crawl " + users.size() + " tai khoan...");
 
-                // Kiểm tra và tạo login session nếu chưa có
+                // Kiểm tra session
                 if (!isLoginSessionAvailable()) {
                     log(logCallback, "Chua co session dang nhap!");
                     log(logCallback, "Mo browser de dang nhap...");
@@ -81,6 +75,13 @@ public class CrawlService {
 
                     crawler.saveLoginSession();
                     log(logCallback, "Da luu session dang nhap!");
+                } else if (isSessionExpired()) {
+                    log(logCallback, "Session dang nhap da het han!");
+                    log(logCallback, "Mo browser de dang nhap lai...");
+                    log(logCallback, "Dang nhap thu cong trong browser.");
+
+                    crawler.saveLoginSession();
+                    log(logCallback, "Da luu session dang nhap moi!");
                 }
 
                 log(logCallback, "Khoi tao browser...");
@@ -96,6 +97,12 @@ public class CrawlService {
             } catch (Exception e) {
                 log(logCallback, "Loi crawl: " + e.getMessage());
                 e.printStackTrace();
+
+                // Nếu lỗi liên quan đến session, yêu cầu đăng nhập lại
+                if (e.getMessage() != null && e.getMessage().contains("Session het han")) {
+                    log(logCallback, "Phat hien session het han trong qua trinh crawl!");
+                    log(logCallback, "Vui long chay lai va dang nhap lai.");
+                }
             } finally {
                 crawler.closeBrowser();
                 log(logCallback, "Da dong browser");
@@ -194,5 +201,52 @@ public class CrawlService {
 
     private boolean isLoginSessionAvailable() {
         return Files.exists(Paths.get("state.json"));
+    }
+
+    /**
+     * Kiểm tra xem session trong state.json có hết hạn không.
+     * Đọc cookies và kiểm tra expires time.
+     */
+    private boolean isSessionExpired() {
+        try {
+            String content = Files.readString(Paths.get("state.json"));
+            JsonObject json = JsonParser.parseString(content).getAsJsonObject();
+
+            if (!json.has("cookies")) {
+                return true;
+            }
+
+            JsonArray cookies = json.getAsJsonArray("cookies");
+            long currentTime = Instant.now().getEpochSecond();
+
+            // Kiểm tra các cookies quan trọng
+            for (int i = 0; i < cookies.size(); i++) {
+                JsonObject cookie = cookies.get(i).getAsJsonObject();
+                String name = cookie.get("name").getAsString();
+
+                // Kiểm tra cookies quan trọng cho authentication
+                if (name.equals("JSESSIONID") || name.equals("X-User-Sha1") || name.equals("cf_clearance")) {
+                    if (cookie.has("expires")) {
+                        double expires = cookie.get("expires").getAsDouble();
+
+                        // expires = -1 nghĩa là session cookie (hết hạn khi đóng browser)
+                        // expires > 0 là unix timestamp
+                        if (expires > 0 && expires < currentTime) {
+                            System.out.println("Cookie " + name + " đã hết hạn (expires: " + expires + ", now: " + currentTime + ")");
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+
+        } catch (IOException e) {
+            System.err.println("Lỗi đọc state.json: " + e.getMessage());
+            return true;
+        } catch (Exception e) {
+            System.err.println("Lỗi parse state.json: " + e.getMessage());
+            return true;
+        }
     }
 }

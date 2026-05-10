@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 public class Analysis {
 
-    private long id = 0;
-    private long submissionId = 0;
+    private Long id;
+    private Long submissionId;
 
     private AiResult aiResult = new AiResult();
 
@@ -17,26 +17,26 @@ public class Analysis {
 
     public Analysis() {}
 
-    public Analysis(long submissionId, AiResult aiResult, ComplexityAnalysis complexityAnalysis, AnalysisOutput analysisOutput) {
+    public Analysis(Long submissionId, AiResult aiResult, ComplexityAnalysis complexityAnalysis, AnalysisOutput analysisOutput) {
         this.submissionId = submissionId;
         this.aiResult = aiResult;
         this.complexityAnalysis = complexityAnalysis;
         this.analysisOutput = analysisOutput;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public long getSubmissionId() {
+    public Long getSubmissionId() {
         return submissionId;
     }
 
-    public void setSubmissionId(long submissionId) {
+    public void setSubmissionId(Long submissionId) {
         this.submissionId = submissionId;
     }
 

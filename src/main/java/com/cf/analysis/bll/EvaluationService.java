@@ -127,6 +127,16 @@ public class EvaluationService {
         return scores;
     }
 
+    /**
+     * Lấy danh sách handle của tất cả users trong hệ thống.
+     */
+    public List<String> getAllUserHandles() throws SQLException {
+        List<User> users = userDAO.findAll();
+        List<String> handles = new ArrayList<>();
+        for (User u : users) handles.add(u.getHandle());
+        return handles;
+    }
+
     // ==================== Score Helpers ====================
 
     private void calculateAiScore(UserScore score, List<Analysis> analyses) {

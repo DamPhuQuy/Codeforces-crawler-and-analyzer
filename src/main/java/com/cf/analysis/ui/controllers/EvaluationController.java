@@ -37,9 +37,27 @@ public class EvaluationController {
     public CompletableFuture<UserScore> getUserScore(String handle) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return evaluationService.getUserScore(handle);
+                UserScore score = evaluationService.getUserScore(handle);
+                if (score == null) {
+                    // Nếu chưa có trong cache, thử tính toán ngay
+                    score = evaluationService.evaluateUser(handle);
+                }
+                return score;
             } catch (Exception e) {
                 throw new RuntimeException("Lỗi tải điểm user: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Lấy tất cả handles từ DB.
+     */
+    public CompletableFuture<List<String>> getAllUserHandles() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return evaluationService.getAllUserHandles();
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi tải danh sách users: " + e.getMessage(), e);
             }
         });
     }

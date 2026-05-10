@@ -178,7 +178,14 @@ public class CodeforcesApiCaller {
             sub.setContestId(s.get("contestId").getAsInt());
         }
 
-        sub.setCreationTimeSeconds(s.has("creationTimeSeconds") ? s.get("creationTimeSeconds").getAsInt() : 0);
+        int creationTimeSeconds = s.has("creationTimeSeconds") ? s.get("creationTimeSeconds").getAsInt() : 0;
+        sub.setCreationTimeSeconds(creationTimeSeconds);
+        if (creationTimeSeconds > 0) {
+            sub.setSubmittedAt(java.time.LocalDateTime.ofInstant(
+                java.time.Instant.ofEpochSecond(creationTimeSeconds), 
+                java.time.ZoneId.systemDefault()
+            ));
+        }
         sub.setRelativeTimeSeconds(s.has("relativeTimeSeconds") ? s.get("relativeTimeSeconds").getAsInt() : 0);
 
         String programmingLanguage = s.has("programmingLanguage") ? s.get("programmingLanguage").getAsString() : "";

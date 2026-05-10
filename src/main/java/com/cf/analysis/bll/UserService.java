@@ -76,7 +76,7 @@ public class UserService {
         try {
             List<User> users = cfClient.getUserInfo(List.of(handle.trim()));
             return users != null && !users.isEmpty();
-        } catch (Exception _) {
+        } catch (Exception e) {
             return false;
         }
     }

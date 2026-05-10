@@ -12,6 +12,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.util.List;
 
+import javax.swing.*;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -46,6 +47,7 @@ public class EvaluationPanel extends JPanel {
     private JTable rankTable;
     private DefaultTableModel rankModel;
     private JButton refreshBtn;
+    private JComboBox<String> userComboBox;
     private RadarChartPanel radarChart;
     private JLabel badgeLabel;
     private JLabel levelLabel;
@@ -65,10 +67,51 @@ public class EvaluationPanel extends JPanel {
         JLabel title = new JLabel("Bảng Xếp Hạng Năng Lực");
         title.setFont(new Font("Arial", Font.BOLD, 17));
         header.add(title);
+        
+        userComboBox = new JComboBox<>();
+        userComboBox.addActionListener(e -> {
+            String handle = (String) userComboBox.getSelectedItem();
+            if (handle == null || handle.startsWith("--")) return;
+            
+            // Tìm trong bảng xếp hạng trước
+            boolean found = false;
+            if (scores != null) {
+                for (int i = 0; i < scores.size(); i++) {
+                    if (scores.get(i).getHandle().equals(handle)) {
+                        rankTable.setRowSelectionInterval(i, i);
+                        rankTable.scrollRectToVisible(rankTable.getCellRect(i, 0, true));
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Nếu không có trong bảng xếp hạng (leaderboard), tải trực tiếp
+            if (!found) {
+                controller.getUserScore(handle).thenAccept(score -> {
+                    if (score != null) {
+                        javax.swing.SwingUtilities.invokeLater(() -> showUserDetail(score));
+                    }
+                });
+            }
+        });
+        header.add(new JLabel("Chọn User:"), "gapleft 20");
+        header.add(userComboBox, "w 150!");
 
         refreshBtn = new JButton("Tính Lại Điểm");
         refreshBtn.setFocusPainted(false);
-        refreshBtn.addActionListener(e -> loadData());
+        refreshBtn.addActionListener(e -> {
+            refreshBtn.setEnabled(false);
+            controller.recalculateAllScores()
+                .thenRun(() -> javax.swing.SwingUtilities.invokeLater(this::loadData))
+                .exceptionally(ex -> {
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(mainFrame, "Lỗi tính lại điểm: " + ex.getMessage());
+                        refreshBtn.setEnabled(true);
+                    });
+                    return null;
+                });
+        });
         header.add(refreshBtn);
         add(header, BorderLayout.NORTH);
 
@@ -111,12 +154,18 @@ public class EvaluationPanel extends JPanel {
             rankTable.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
 
-        // Chọn row → cập nhật detail panel
+        // Chọn row → cập nhật detail panel và sync combo box
         rankTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && scores != null) {
                 int row = rankTable.getSelectedRow();
                 if (row >= 0 && row < scores.size()) {
-                    showUserDetail(scores.get(row));
+                    UserScore selected = scores.get(row);
+                    showUserDetail(selected);
+                    
+                    // Sync ComboBox (avoid recursive event)
+                    if (!selected.getHandle().equals(userComboBox.getSelectedItem())) {
+                        userComboBox.setSelectedItem(selected.getHandle());
+                    }
                 }
             }
         });
@@ -185,6 +234,15 @@ public class EvaluationPanel extends JPanel {
                 refreshBtn.setEnabled(true);
                 return null;
             });
+
+        // Load all users for ComboBox
+        controller.getAllUserHandles().thenAccept(handles -> {
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                userComboBox.removeAllItems();
+                userComboBox.addItem("-- Chọn Nick --");
+                for (String h : handles) userComboBox.addItem(h);
+            });
+        });
     }
 
     private void showUserDetail(UserScore score) {

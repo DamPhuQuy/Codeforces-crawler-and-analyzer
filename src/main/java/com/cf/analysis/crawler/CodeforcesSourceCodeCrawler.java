@@ -1,6 +1,7 @@
 package com.cf.analysis.crawler;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,7 @@ public class CodeforcesSourceCodeCrawler {
     private static final int RETRY_DELAY_MS = 2000;
     private static final int PAGE_TIMEOUT_MS = 30000;
     private static final int SELECTOR_TIMEOUT_MS = 20000;
+    private static final String SETTINGS_URL = "https://codeforces.com/settings/general";
 
     private final CodeforcesApiCaller apiCaller;
     private Playwright playwright;
@@ -161,15 +163,26 @@ public class CodeforcesSourceCodeCrawler {
     }
 
     private SubmissionSourceCode crawlSingleSubmission(Submission submission) {
+        String url = buildSubmissionUrl(submission);
+        boolean sessionRefreshed = false;
         try {
-            String url = buildSubmissionUrl(submission);
             page.navigate(url, new Page.NavigateOptions()
                     .setTimeout(PAGE_TIMEOUT_MS));
 
             // Kiểm tra xem có bị redirect về login page không
-            String currentUrl = page.url();
-            if (currentUrl.contains("/enter") || currentUrl.contains("login")) {
+            if (isLoginRedirect()) {
+                sessionRefreshed = true;
+                refreshLoginSession("redirect to login");
                 throw new RuntimeException("Session hết hạn - bị redirect về login page. Cần đăng nhập lại!");
+            }
+
+            if (isAccessDeniedPage()) {
+                if (isSessionExpiredBySettings(url)) {
+                    sessionRefreshed = true;
+                    refreshLoginSession("access denied page");
+                    throw new RuntimeException("Session hết hạn - access denied. Cần đăng nhập lại!");
+                }
+                throw new RuntimeException("Access denied nhưng session vẫn còn sống");
             }
 
             // Chờ selector với timeout
@@ -188,8 +201,104 @@ public class CodeforcesSourceCodeCrawler {
                 System.err.println("   Current URL: " + page.url());
             } catch (Exception ignored) {}
 
+            // Nếu bị access denied hoặc login redirect sau khi load trang, reset session để retry
+            try {
+                if (!sessionRefreshed) {
+                    if (isLoginRedirect()) {
+                        sessionRefreshed = true;
+                        refreshLoginSession("redirect to login");
+                    } else if (isAccessDeniedPage()) {
+                        if (isSessionExpiredBySettings(url)) {
+                            sessionRefreshed = true;
+                            refreshLoginSession("access denied page");
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            if (sessionRefreshed) {
+                throw new RuntimeException("Session refreshed, retrying", e);
+            }
+
             return null;
         }
+    }
+
+    private boolean isLoginRedirect() {
+        try {
+            String currentUrl = page.url();
+            return currentUrl.contains("/enter") || currentUrl.contains("login");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isAccessDeniedPage() {
+        try {
+            String bodyText = page.locator("body").innerText();
+            return bodyText != null && bodyText.contains("You are not allowed to view the requested page");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isSessionExpired() {
+        if (page == null) {
+            throw new IllegalStateException("Browser not initialized. Call initBrowser() first.");
+        }
+        return isSessionExpiredBySettings(null);
+    }
+
+    private boolean isSessionExpiredBySettings(String returnUrl) {
+        try {
+            page.navigate(SETTINGS_URL, new Page.NavigateOptions()
+                    .setTimeout(PAGE_TIMEOUT_MS));
+            boolean expired = isLoginRedirect();
+
+            if (!expired && returnUrl != null) {
+                page.navigate(returnUrl, new Page.NavigateOptions()
+                        .setTimeout(PAGE_TIMEOUT_MS));
+            }
+
+            return expired;
+        } catch (Exception e) {
+            System.err.println("Session check failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void refreshLoginSession(String reason) {
+        System.err.println("Session invalid (" + reason + "). Resetting state.json...");
+
+        try {
+            if (page != null) {
+                page.close();
+            }
+        } catch (Exception ignored) {}
+        page = null;
+
+        try {
+            if (context != null) {
+                context.close();
+            }
+        } catch (Exception ignored) {}
+        context = null;
+
+        try {
+            Files.deleteIfExists(Paths.get("state.json"));
+        } catch (IOException e) {
+            System.err.println("Failed to delete state.json: " + e.getMessage());
+        }
+
+        saveLoginSession();
+
+        if (browser == null) {
+            throw new IllegalStateException("Browser not initialized. Call initBrowser() first.");
+        }
+
+        context = browser.newContext(new Browser.NewContextOptions()
+                .setStorageStatePath(Paths.get("state.json")));
+        page = context.newPage();
     }
 
     private String buildSubmissionUrl(Submission submission) {

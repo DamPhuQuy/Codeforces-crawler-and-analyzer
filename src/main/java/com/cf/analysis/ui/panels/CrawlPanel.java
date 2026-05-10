@@ -27,21 +27,6 @@ import com.cf.analysis.ui.controllers.SettingsController;
 
 import net.miginfocom.swing.MigLayout;
 
-/**
- * Panel Tab 2: 🔄 Crawl Monitor.
- *
- * Chức năng:
- * - Nút "Crawl Tất Cả Ngay": bắt đầu crawl tất cả nick ngay
- * - Nút "Dừng": yêu cầu stop crawl giữa chừng
- * - Nút "Bật/Tắt Lịch Tự Động": crawl định kỳ mỗi X giờ
- * - Log console: real-time với màu sắc (xanh=OK, đỏ=lỗi, vàng=cảnh báo)
- * - Progress bar tổng thể
- *
- * Ghi chú SwingWorker cho người mới:
- * CrawlService tự tạo thread riêng và gọi callback.
- * Callback phải gọi SwingUtilities.invokeLater() trước khi update UI
- * vì Swing KHÔNG thread-safe (chỉ EDT mới được update UI).
- */
 public class CrawlPanel extends JPanel {
 
     // ====== Services ======

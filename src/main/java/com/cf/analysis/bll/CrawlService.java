@@ -125,7 +125,7 @@ public class CrawlService {
             log(logCallback, "-> Max submission id tu lan crawl truoc: " + maxExistingId);
             log(logCallback, "-> Max submissions duoc setting: " + maxCount);
 
-            List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, maxExistingId);
+            List<SubmissionSourceCode> results = crawler.crawlUserSubmissions(handle, maxCount, 0);
 
             log(logCallback, "-> Da crawl " + results.size() + " submissions");
 

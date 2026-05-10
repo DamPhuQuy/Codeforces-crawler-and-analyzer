@@ -73,7 +73,7 @@ public class SubmissionAnalysisPanel extends JPanel {
     private static final String[] SUB_COLS = { "#", "Bài Toán", "Ngôn Ngữ", "Kết Quả", "Thời Gian", "PT" };
 
     private final MainFrame         mainFrame;
-    private final SimpleDateFormat  sdf = new SimpleDateFormat("dd/MM HH:mm");
+    private final java.time.format.DateTimeFormatter  sdf = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm");
 
     // Cache submissions đang hiển thị (để biết row nào = Submission nào)
     private List<Submission> currentSubmissions = new ArrayList<>();
@@ -360,7 +360,7 @@ public class SubmissionAnalysisPanel extends JPanel {
                         s.getProblemName(),
                         s.getShortLanguage(),
                         "OK".equals(s.getVerdict()) ? "AC" : s.getVerdict(),
-                        s.getSubmittedAt() != null ? sdf.format(s.getSubmittedAt()) : "",
+                        s.getSubmittedAt() != null ? s.getSubmittedAt().format(sdf) : "",
                         s.isAnalyzed() ? "[x]" : "[ ]"
                     });
                 }

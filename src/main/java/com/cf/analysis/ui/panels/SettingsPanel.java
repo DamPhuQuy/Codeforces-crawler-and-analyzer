@@ -100,7 +100,7 @@ public class SettingsPanel extends JPanel {
         JPanel section = createSection("Cài Đặt Crawl Định Kỳ");
 
         crawlIntervalSpinner = new JSpinner(new SpinnerNumberModel(24, 1, 168, 1));
-        maxSubsSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
+        maxSubsSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
 
         section.add(new JLabel("Crawl mỗi:"));
         section.add(crawlIntervalSpinner, "w 70!, split 2");

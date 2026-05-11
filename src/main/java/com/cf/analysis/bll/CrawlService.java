@@ -13,14 +13,17 @@ import java.util.function.Consumer;
 
 import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler;
 import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler.SubmissionSourceCode;
+import com.cf.analysis.dal.ProblemDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
+import com.cf.analysis.model.problem.Problem;
 import com.cf.analysis.model.user.User;
 
 public class CrawlService {
 
     private final UserDAO userDAO;
     private final SubmissionDAO submissionDAO;
+    private final ProblemDAO problemDAO;
     private final CodeforcesSourceCodeCrawler crawler;
     private final SettingsService settings;
 
@@ -33,9 +36,10 @@ public class CrawlService {
 
     private final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, SettingsService settings, CodeforcesSourceCodeCrawler crawler) {
+    public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, ProblemDAO problemDAO, SettingsService settings, CodeforcesSourceCodeCrawler crawler) {
         this.userDAO = userDAO;
         this.submissionDAO = submissionDAO;
+        this.problemDAO = problemDAO;
         this.crawler = crawler;
         this.settings = settings;
     }
@@ -125,6 +129,25 @@ public class CrawlService {
                 if (!crawling) break;
 
                 result.submission.setSourceCode(result.sourceCode);
+
+                // Save problem metadata first (if available)
+                if (result.problem != null) {
+                    try {
+                        problemDAO.insert(result.problem);
+
+                        // Lookup the problem ID after insert to link with submission
+                        Problem savedProblem = problemDAO.findByContestAndIndex(
+                            result.problem.getContestId(),
+                            result.problem.getIndex()
+                        );
+                        if (savedProblem != null) {
+                            result.submission.setProblemId(savedProblem.getId());
+                        }
+                    } catch (Exception e) {
+                        log(logCallback, "  Warning: Could not save problem metadata: " + e.getMessage());
+                        // Continue anyway - problem metadata is optional
+                    }
+                }
 
                 log(logCallback, "Submission " + result.submission.getId());
                 log(logCallback, "Source code: " + (result.sourceCode.length() > 100 ? result.sourceCode.substring(0, 100) + "..." : result.sourceCode));

@@ -168,7 +168,7 @@ public class MainFrame extends JFrame {
         SettingsService settingsService = new SettingsService();
         UserService userService = new UserService(userDAO, cfClient);
         AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, problemDAO, settingsService);
-        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, settingsService, crawler);
+        CrawlService crawlService = new CrawlService(userDAO, submissionDAO, problemDAO, settingsService, crawler);
         EvaluationService evaluationService = new EvaluationService(userDAO, userScoreDAO, submissionDAO, analysisDAO);
 
         // Controllers

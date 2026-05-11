@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.cf.analysis.model.submission.Submission;
+import com.cf.analysis.model.problem.Problem;
+import com.cf.analysis.model.SubmissionWithProblem;
 import com.google.common.util.concurrent.RateLimiter;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
@@ -114,24 +116,25 @@ public class CodeforcesSourceCodeCrawler {
         }
 
         try {
-            List<Submission> submissions = apiCaller.getUserSubmissions(handle, maxCount, minSubId);
-            System.out.println("Found " + submissions.size() + " accepted submissions for " + handle);
+            List<SubmissionWithProblem> submissionsWithProblems = apiCaller.getUserSubmissions(handle, maxCount, minSubId);
+            System.out.println("Found " + submissionsWithProblems.size() + " accepted submissions for " + handle);
 
             List<SubmissionSourceCode> results = new ArrayList<>();
 
-            for (int i = 0; i < submissions.size(); i++) {
-                Submission sub = submissions.get(i);
+            for (int i = 0; i < submissionsWithProblems.size(); i++) {
+                SubmissionWithProblem swp = submissionsWithProblems.get(i);
+                Submission sub = swp.getSubmission();
 
-                System.out.println("Processing submission " + (i + 1) + "/" + submissions.size() + " (ID: " + sub.getId() + ")");
+                System.out.println("Processing submission " + (i + 1) + "/" + submissionsWithProblems.size() + " (ID: " + sub.getId() + ")");
 
-                SubmissionSourceCode result = crawlSubmissionWithRetry(sub);
+                SubmissionSourceCode result = crawlSubmissionWithRetry(sub, swp.getProblem());
                 if (result != null && result.sourceCode != null) {
                     System.err.println(result.sourceCode);
                     results.add(result);
                 }
             }
 
-            System.out.println("Successfully crawled " + results.size() + "/" + submissions.size() + " submissions");
+            System.out.println("Successfully crawled " + results.size() + "/" + submissionsWithProblems.size() + " submissions");
             return results;
 
         } catch (IOException e) {
@@ -140,11 +143,11 @@ public class CodeforcesSourceCodeCrawler {
         }
     }
 
-    private SubmissionSourceCode crawlSubmissionWithRetry(Submission submission) {
+    private SubmissionSourceCode crawlSubmissionWithRetry(Submission submission, Problem problem) {
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
                 rateLimiter.acquire();
-                return crawlSingleSubmission(submission);
+                return crawlSingleSubmission(submission, problem);
             } catch (Exception e) {
                 System.err.println("Attempt " + attempt + "/" + MAX_RETRIES + " failed for submission "
                         + submission.getId() + ": " + e.getMessage());
@@ -162,7 +165,7 @@ public class CodeforcesSourceCodeCrawler {
         return null;
     }
 
-    private SubmissionSourceCode crawlSingleSubmission(Submission submission) {
+    private SubmissionSourceCode crawlSingleSubmission(Submission submission, Problem problem) {
         String url = buildSubmissionUrl(submission);
         boolean sessionRefreshed = false;
         try {
@@ -191,7 +194,7 @@ public class CodeforcesSourceCodeCrawler {
             String sourceCode = page.locator("#program-source-text").innerText();
 
             System.out.println("✓ Crawled submission " + submission.getId());
-            return new SubmissionSourceCode(submission, sourceCode);
+            return new SubmissionSourceCode(submission, problem, sourceCode);
 
         } catch (Exception e) {
             System.err.println("✗ Failed to crawl submission " + submission.getId() + ": " + e.getMessage());
@@ -312,10 +315,12 @@ public class CodeforcesSourceCodeCrawler {
 
     public static class SubmissionSourceCode {
         public final Submission submission;
+        public final Problem problem;
         public final String sourceCode;
 
-        public SubmissionSourceCode(Submission submission, String sourceCode) {
+        public SubmissionSourceCode(Submission submission, Problem problem, String sourceCode) {
             this.submission = submission;
+            this.problem = problem;
             this.sourceCode = sourceCode;
         }
     }

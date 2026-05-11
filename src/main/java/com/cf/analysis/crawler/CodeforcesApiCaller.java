@@ -6,10 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.cf.analysis.model.problem.Problem;
 import com.cf.analysis.model.submission.Submission;
 import com.cf.analysis.model.submission.TestSet;
 import com.cf.analysis.model.submission.Verdict;
 import com.cf.analysis.model.user.User;
+import com.cf.analysis.model.SubmissionWithProblem;
 import com.cf.analysis.utils.GenerateUrl;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
@@ -112,7 +114,7 @@ public class CodeforcesApiCaller {
         return u;
     }
 
-    public List<Submission> getUserSubmissions(String handle, int maxCount, long minSubId)
+    public List<SubmissionWithProblem> getUserSubmissions(String handle, int maxCount, long minSubId)
             throws IOException {
 
         rateLimiter.acquire();
@@ -133,7 +135,7 @@ public class CodeforcesApiCaller {
                 throw new IOException("Không lấy được submissions của " + handle);
             }
 
-            List<Submission> results = new ArrayList<>();
+            List<SubmissionWithProblem> results = new ArrayList<>();
             JsonArray items = response.getAsJsonArray("result");
 
             for (JsonElement element : items) {
@@ -152,7 +154,15 @@ public class CodeforcesApiCaller {
 
                 if (isAcceptedSubmission(s)) {
                     Submission sub = parseSubmission(handle, subId, s);
-                    results.add(sub);
+
+                    // Parse problem metadata
+                    Problem problem = null;
+                    if (s.has("problem") && !s.get("problem").isJsonNull()) {
+                        JsonObject problemJson = s.getAsJsonObject("problem");
+                        problem = parseProblem(problemJson, sub.getContestId());
+                    }
+
+                    results.add(new SubmissionWithProblem(sub, problem));
                 }
             }
 
@@ -228,5 +238,43 @@ public class CodeforcesApiCaller {
             }
         }
         return TestSet.SAMPLES;
+    }
+
+    /**
+     * Parse problem metadata from API response.
+     * Returns null if problem data is missing or invalid.
+     */
+    public Problem parseProblem(JsonObject problemJson, Integer contestId) {
+        if (problemJson == null || problemJson.isJsonNull()) {
+            return null;
+        }
+
+        try {
+            String index = problemJson.has("index") ? problemJson.get("index").getAsString() : "";
+            if (index.isEmpty()) {
+                return null; // index is required
+            }
+
+            String name = problemJson.has("name") ? problemJson.get("name").getAsString() : "";
+            String type = problemJson.has("type") ? problemJson.get("type").getAsString() : "";
+            Float points = problemJson.has("points") ? problemJson.get("points").getAsFloat() : 0.0f;
+            Integer rating = problemJson.has("rating") ? problemJson.get("rating").getAsInt() : 0;
+
+            // Parse tags array
+            String[] tags = new String[0];
+            if (problemJson.has("tags") && problemJson.get("tags").isJsonArray()) {
+                JsonArray tagsArray = problemJson.getAsJsonArray("tags");
+                tags = new String[tagsArray.size()];
+                for (int i = 0; i < tagsArray.size(); i++) {
+                    tags[i] = tagsArray.get(i).getAsString();
+                }
+            }
+
+            return new Problem(contestId, "", index, name, type, points, rating, tags);
+
+        } catch (Exception e) {
+            System.err.println("Error parsing problem: " + e.getMessage());
+            return null;
+        }
     }
 }

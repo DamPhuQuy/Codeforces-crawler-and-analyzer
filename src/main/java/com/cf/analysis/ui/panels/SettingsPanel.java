@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 
 import com.cf.analysis.ui.MainFrame;
@@ -85,10 +86,14 @@ public class SettingsPanel extends JPanel {
             }
             controller.setGeminiApiKey(key)
                 .thenRun(() -> {
-                    setStatus(apiStatusLabel, "Đã lưu API Key!", true);
+                    SwingUtilities.invokeLater(() -> {
+                        setStatus(apiStatusLabel, "Đã lưu API Key!", true);
+                    });
                 })
                 .exceptionally(ex -> {
-                    setStatus(apiStatusLabel, ex.getMessage(), false);
+                    SwingUtilities.invokeLater(() -> {
+                        setStatus(apiStatusLabel, ex.getMessage(), false);
+                    });
                     return null;
                 });
         });
@@ -121,14 +126,18 @@ public class SettingsPanel extends JPanel {
             controller.setCrawlIntervalHours(intervalHours)
                 .thenCompose(v -> controller.setMaxSubmissionsPerCrawl(maxSubs))
                 .thenRun(() -> {
-                    JOptionPane.showMessageDialog(mainFrame,
-                        "Đã lưu cài đặt crawl!",
-                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(mainFrame,
+                            "Đã lưu cài đặt crawl!",
+                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    });
                 })
                 .exceptionally(ex -> {
-                    JOptionPane.showMessageDialog(mainFrame,
-                        "Lỗi: " + ex.getMessage(),
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(mainFrame,
+                            "Lỗi: " + ex.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    });
                     return null;
                 });
         });

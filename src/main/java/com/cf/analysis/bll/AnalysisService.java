@@ -7,22 +7,26 @@ import java.util.function.Consumer;
 
 import com.cf.analysis.ai.GeminiAnalyzer;
 import com.cf.analysis.dal.AnalysisDAO;
+import com.cf.analysis.dal.ProblemDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.model.analysis.Analysis;
+import com.cf.analysis.model.problem.Problem;
 import com.cf.analysis.model.submission.Submission;
 
 public class AnalysisService {
 
     private final SubmissionDAO submissionDAO;
     private final AnalysisDAO analysisDAO;
+    private final ProblemDAO problemDAO;
     private final SettingsService settings;
 
     private GeminiAnalyzer analyzer;  // Lazy initialization
     private volatile boolean analyzing = false;
 
-    public AnalysisService(SubmissionDAO submissionDAO, AnalysisDAO analysisDAO, SettingsService settings) {
+    public AnalysisService(SubmissionDAO submissionDAO, AnalysisDAO analysisDAO, ProblemDAO problemDAO, SettingsService settings) {
         this.submissionDAO = submissionDAO;
         this.analysisDAO = analysisDAO;
+        this.problemDAO = problemDAO;
         this.settings = settings;
     }
 
@@ -57,7 +61,15 @@ public class AnalysisService {
 
         log(logCallback, "🤖 Phân tích: " + sub.getProblemName() + " (" + sub.getShortLanguage() + ")...");
 
-        Analysis result = getAnalyzer().analyze(sub);
+        // Lookup problem metadata (optional, không fail nếu không tìm thấy)
+        Problem problem = null;
+        try {
+            problem = problemDAO.findById(sub.getProblemId());
+        } catch (Exception e) {
+            // Không có problem metadata → tiếp tục phân tích bình thường
+        }
+
+        Analysis result = getAnalyzer().analyze(sub, problem);
         analysisDAO.insert(result);
 
         return result;
@@ -97,7 +109,16 @@ public class AnalysisService {
                     Submission sub = pending.get(i);
                     try {
                         log(logCallback, "[" + (i + 1) + "/" + total + "] " + sub.getProblemName());
-                        Analysis result = getAnalyzer().analyze(sub);
+
+                        // Lookup problem metadata
+                        Problem problem = null;
+                        try {
+                            problem = problemDAO.findById(sub.getProblemId());
+                        } catch (Exception e) {
+                            // Không có problem metadata → tiếp tục
+                        }
+
+                        Analysis result = getAnalyzer().analyze(sub, problem);
                         analysisDAO.insert(result);
 
                         // Callbacks phải chạy lại dùng invokeLater từ caller
@@ -149,8 +170,16 @@ public class AnalysisService {
             log(logCallback, "  🗑️ Đã xóa kết quả phân tích cũ");
         }
 
+        // Lookup problem metadata
+        Problem problem = null;
+        try {
+            problem = problemDAO.findById(sub.getProblemId());
+        } catch (Exception e) {
+            // Không có problem metadata → tiếp tục
+        }
+
         // Phân tích lại
-        Analysis result = getAnalyzer().analyze(sub);
+        Analysis result = getAnalyzer().analyze(sub, problem);
         analysisDAO.insert(result);
 
         log(logCallback, "  ✅ Hoàn tất phân tích lại");
@@ -201,8 +230,16 @@ public class AnalysisService {
                             analysisDAO.delete(oldAnalysis.getId());
                         }
 
+                        // Lookup problem metadata
+                        Problem problem = null;
+                        try {
+                            problem = problemDAO.findById(sub.getProblemId());
+                        } catch (Exception e) {
+                            // Không có problem metadata → tiếp tục
+                        }
+
                         // Phân tích lại
-                        Analysis result = getAnalyzer().analyze(sub);
+                        Analysis result = getAnalyzer().analyze(sub, problem);
                         analysisDAO.insert(result);
 
                         if (progressCallback != null) {

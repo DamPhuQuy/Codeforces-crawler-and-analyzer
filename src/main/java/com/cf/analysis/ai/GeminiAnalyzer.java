@@ -11,6 +11,7 @@ import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.analysis.AnalysisOutput;
 import com.cf.analysis.model.analysis.ComplexityAnalysis;
 import com.cf.analysis.model.analysis.Indicator;
+import com.cf.analysis.model.problem.Problem;
 import com.cf.analysis.model.submission.Submission;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,7 +49,7 @@ public class GeminiAnalyzer {
 
     public void setApiKey(String apiKey) { this.apiKey = apiKey; }
 
-    public Analysis analyze(Submission submission) throws IOException {
+    public Analysis analyze(Submission submission, Problem problem) throws IOException {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("Chưa cấu hình Gemini API Key! Vào tab Cài Đặt để nhập key.");
         }
@@ -56,17 +57,33 @@ public class GeminiAnalyzer {
             throw new IllegalArgumentException("Submission #" + submission.getSubmissionId() + " không có source code!");
         }
 
-        String prompt = buildPrompt(submission);
+        String prompt = buildPrompt(submission, problem);
         String rawResponse = callGemini(prompt);
         return parseResponse(rawResponse, submission.getId());
     }
 
 
-    private String buildPrompt(Submission submission) {
+    private String buildPrompt(Submission submission, Problem problem) {
         String code = submission.getSourceCode();
         if (code.length() > 8000) {
             code = code.substring(0, 8000) + "\n// ... (code bị cắt do quá dài)";
         }
+
+        // Build problem metadata context (minimal)
+        StringBuilder problemContext = new StringBuilder();
+        if (problem != null) {
+            if (problem.getRating() != null && problem.getRating() > 0) {
+                problemContext.append("Problem rating: ").append(problem.getRating()).append("\n");
+            }
+            if (problem.getTags() != null && problem.getTags().length > 0) {
+                problemContext.append("Problem tags: ").append(String.join(", ", problem.getTags())).append("\n");
+            }
+            if (problem.getContestId() != null && problem.getIndex() != null) {
+                problemContext.append("Problem: ").append(problem.getContestId()).append(problem.getIndex()).append("\n");
+            }
+        }
+
+        String problemInfo = problemContext.length() > 0 ? problemContext.toString() : "";
 
         return """
             Bạn là chuyên gia phân tích code competitive programming.
@@ -89,7 +106,7 @@ public class GeminiAnalyzer {
             - Ngôn ngữ: %s
             - Bài toán: %s
             - Kết quả: %s
-
+            %s
             Source code:
             %s
 
@@ -173,6 +190,7 @@ public class GeminiAnalyzer {
                 submission.getLanguage(),
                 submission.getProblemName(),
                 submission.getVerdict(),
+                problemInfo.isEmpty() ? "" : "\n" + problemInfo,
                 code
             );
     }

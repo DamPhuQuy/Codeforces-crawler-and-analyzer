@@ -1,0 +1,6 @@
+flyway.url=jdbc:postgresql://localhost:5432/cf_analysis
+flyway.user=postgres
+flyway.password=quy16506
+flyway.locations=classpath:db/migration
+flyway.encoding=UTF-8
+flyway.validateOnMigrate=true

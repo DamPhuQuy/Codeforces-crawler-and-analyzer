@@ -250,10 +250,10 @@ public class EvaluationPanel extends JPanel {
 
         levelLabel.setText("Level: " + score.getLevel().name());
         levelLabel.setForeground(switch (score.getLevel()) {
-            case EXPERT       -> new Color(200, 200, 200);
-            case ADVANCED     -> new Color(180, 180, 180);
+            case EXPERT -> new Color(200, 200, 200);
+            case ADVANCED -> new Color(180, 180, 180);
             case INTERMEDIATE -> new Color(160, 160, 160);
-            default           -> Color.GRAY;
+            default -> Color.GRAY;
         });
 
         statsLabel.setText(String.format("""
@@ -306,7 +306,7 @@ public class EvaluationPanel extends JPanel {
             if (w <= 100 || h <= 60) return;
 
             // Margins
-            int leftMargin = 100;
+            int leftMargin = 150;
             int rightMargin = 60;
             int topMargin = 20;
             int bottomMargin = 20;
@@ -422,9 +422,9 @@ public class EvaluationPanel extends JPanel {
             if (!sel && v != null) {
                 try {
                     double pct = Double.parseDouble(v.toString().replace("%",""));
-                    if      (pct >= 50) setForeground(new Color(200, 200, 200));
+                    if (pct >= 50) setForeground(new Color(200, 200, 200));
                     else if (pct >= 20) setForeground(new Color(180, 180, 180));
-                    else                setForeground(new Color(160, 160, 160));
+                    else setForeground(new Color(160, 160, 160));
                 } catch (NumberFormatException ignored) {}
             }
             return this;

@@ -100,15 +100,15 @@ public class SettingsPanel extends JPanel {
         JPanel section = createSection("Cài Đặt Crawl Định Kỳ");
 
         crawlIntervalSpinner = new JSpinner(new SpinnerNumberModel(24, 1, 168, 1));
-        maxSubsSpinner = new JSpinner(new SpinnerNumberModel(50, 10, 500, 10));
+        maxSubsSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
 
         section.add(new JLabel("Crawl mỗi:"));
         section.add(crawlIntervalSpinner, "w 70!, split 2");
         section.add(new JLabel(" giờ  (1–168)"), "wrap");
 
-        section.add(new JLabel("Max submissions/lần:"));
+        section.add(new JLabel("Max submissions /lần:"));
         section.add(maxSubsSpinner, "w 70!, split 2");
-        section.add(new JLabel(" submissions (10–500)"), "wrap");
+        section.add(new JLabel(" submissions (1-50), khuyến nghị: 10"), "wrap");
 
         JButton saveCrawlBtn = new JButton("Lưu Cài Đặt Crawl");
         section.add(new JLabel(""));

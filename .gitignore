@@ -1,19 +1,11 @@
-# ============================================================
-# .gitignore cho Codeforces Examination Analysis
-# ============================================================
-
-# ===== Build output =====
 target/
 *.class
 *.jar
 
-# ===== Flyway config (chứa password DB — KHÔNG commit!) =====
 flyway.conf
 
-# ===== App config (chứa password DB) =====
 db-config.properties
 
-# ===== IDE files =====
 .idea/
 *.iml
 .vscode/
@@ -21,11 +13,9 @@ db-config.properties
 *.project
 .settings/
 
-# ===== OS files =====
 .DS_Store
 Thumbs.db
 
-# ===== Log files =====
 *.log
 logs/
 

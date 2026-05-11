@@ -31,7 +31,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                  relative_time_seconds, problem_id, programming_language, verdict,
                  test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
                  points, source_code, submitted_at, crawled_at, analyzed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ON CONFLICT (id) DO UPDATE SET
                 submitted_at = EXCLUDED.submitted_at
             """;
@@ -42,7 +42,7 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                  relative_time_seconds, problem_id, programming_language, verdict,
                  test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
                  points, source_code, submitted_at, crawled_at, analyzed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ON CONFLICT DO NOTHING
             """;
 

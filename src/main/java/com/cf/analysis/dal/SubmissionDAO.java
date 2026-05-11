@@ -30,10 +30,9 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                 (id, user_handle, language, contest_id, creation_time_seconds,
                  relative_time_seconds, problem_id, programming_language, verdict,
                  test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                 points, source_code, problemset_name, submitted_at, crawled_at, analyzed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+                 points, source_code, submitted_at, crawled_at, analyzed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ON CONFLICT (id) DO UPDATE SET
-                problemset_name = EXCLUDED.problemset_name,
                 submitted_at = EXCLUDED.submitted_at
             """;
 
@@ -42,8 +41,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                 (user_handle, language, contest_id, creation_time_seconds,
                  relative_time_seconds, problem_id, programming_language, verdict,
                  test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                 points, source_code, problemset_name, submitted_at, crawled_at, analyzed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+                 points, source_code, submitted_at, crawled_at, analyzed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ON CONFLICT DO NOTHING
             """;
 
@@ -79,7 +78,6 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             ps.setInt(idx++, safeInt(sub.getMemoryConsumedBytes()));
             ps.setFloat(idx++, sub.getPoints() != null ? sub.getPoints() : 0.0f);
             ps.setString(idx++, sub.getSourceCode());
-            ps.setString(idx++, sub.getProblemName());
             ps.setObject(idx++, sub.getSubmittedAt());
             ps.setBoolean(idx, sub.isAnalyzed());
             ps.executeUpdate();
@@ -92,11 +90,13 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.creation_time_seconds, s.relative_time_seconds,
                    s.problem_id, s.programming_language, s.verdict,
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
-                   s.memory_consumed_bytes, s.points, s.source_code, s.problemset_name,
+                   s.memory_consumed_bytes, s.points, s.source_code,
+                   COALESCE(p.name, p.problemset_name, '') AS problemset_name,
                    s.submitted_at, s.crawled_at,
                    (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
+            LEFT JOIN problems p ON p.id = s.problem_id
             WHERE s.user_handle = ?
             ORDER BY s.submitted_at DESC
             """;
@@ -120,11 +120,13 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.creation_time_seconds, s.relative_time_seconds,
                    s.problem_id, s.programming_language, s.verdict,
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
-                   s.memory_consumed_bytes, s.points, s.source_code, s.problemset_name,
+                   s.memory_consumed_bytes, s.points, s.source_code,
+                   COALESCE(p.name, p.problemset_name, '') AS problemset_name,
                    s.submitted_at, s.crawled_at,
                    (a.id IS NOT NULL OR s.analyzed) AS analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
+            LEFT JOIN problems p ON p.id = s.problem_id
             ORDER BY s.submitted_at DESC
             """;
         List<Submission> list = new ArrayList<>();
@@ -141,12 +143,15 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
     @Override
     public Submission findById(Integer id) throws SQLException {
         String sql = """
-            SELECT id, user_handle, language, contest_id, creation_time_seconds,
-                   relative_time_seconds, problem_id, programming_language, verdict,
-                   test_set, passed_test_count, time_consumed_millis, memory_consumed_bytes,
-                   points, source_code, problemset_name, submitted_at, crawled_at, analyzed
-            FROM submissions
-            WHERE id = ?
+            SELECT s.id, s.user_handle, s.language, s.contest_id, s.creation_time_seconds,
+                   s.relative_time_seconds, s.problem_id, s.programming_language, s.verdict,
+                   s.test_set, s.passed_test_count, s.time_consumed_millis, s.memory_consumed_bytes,
+                   s.points, s.source_code,
+                   COALESCE(p.name, p.problemset_name, '') AS problemset_name,
+                   s.submitted_at, s.crawled_at, s.analyzed
+            FROM submissions s
+            LEFT JOIN problems p ON p.id = s.problem_id
+            WHERE s.id = ?
             """;
 
         try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
@@ -184,10 +189,12 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
                    s.creation_time_seconds, s.relative_time_seconds,
                    s.problem_id, s.programming_language, s.verdict,
                    s.test_set, s.passed_test_count, s.time_consumed_millis,
-                   s.memory_consumed_bytes, s.points, s.source_code, s.problemset_name,
+                   s.memory_consumed_bytes, s.points, s.source_code,
+                   COALESCE(p.name, p.problemset_name, '') AS problemset_name,
                    s.submitted_at, s.crawled_at, s.analyzed
             FROM submissions s
             LEFT JOIN analyses a ON a.submission_id = s.id
+            LEFT JOIN problems p ON p.id = s.problem_id
             WHERE a.id IS NULL
               AND s.source_code IS NOT NULL
               AND s.source_code <> ''

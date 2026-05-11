@@ -4,7 +4,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,6 +36,9 @@ public class CrawlService {
     // Flag: đang crawl hay không
     private volatile boolean crawling = false;
 
+    // Cache problems đã save trong session crawl hiện tại (key: "contestId:index")
+    private final Map<String, Integer> problemCache = new HashMap<>();
+
     private final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public CrawlService(UserDAO userDAO, SubmissionDAO submissionDAO, ProblemDAO problemDAO, SettingsService settings, CodeforcesSourceCodeCrawler crawler) {
@@ -55,6 +60,9 @@ public class CrawlService {
             int totalNew = 0;
 
             try {
+                // Clear cache at start of crawl session
+                problemCache.clear();
+
                 List<User> users = userDAO.findAll();
                 if (users.isEmpty()) {
                     log(logCallback, "Khong co tai khoan nao de crawl!");
@@ -133,15 +141,27 @@ public class CrawlService {
                 // Save problem metadata first (if available)
                 if (result.problem != null) {
                     try {
-                        problemDAO.insert(result.problem);
+                        String problemKey = result.problem.getContestId() + ":" + result.problem.getIndex();
+                        Integer problemId = problemCache.get(problemKey);
 
-                        // Lookup the problem ID after insert to link with submission
-                        Problem savedProblem = problemDAO.findByContestAndIndex(
-                            result.problem.getContestId(),
-                            result.problem.getIndex()
-                        );
-                        if (savedProblem != null) {
-                            result.submission.setProblemId(savedProblem.getId());
+                        if (problemId == null) {
+                            // Problem chưa được save trong session này
+                            problemDAO.insert(result.problem);
+
+                            // Lookup the problem ID after insert to link with submission
+                            Problem savedProblem = problemDAO.findByContestAndIndex(
+                                result.problem.getContestId(),
+                                result.problem.getIndex()
+                            );
+                            if (savedProblem != null) {
+                                problemId = savedProblem.getId();
+                                problemCache.put(problemKey, problemId);
+                            }
+                        }
+
+                        // Set problemId cho submission
+                        if (problemId != null) {
+                            result.submission.setProblemId(problemId);
                         }
                     } catch (Exception e) {
                         log(logCallback, "  Warning: Could not save problem metadata: " + e.getMessage());

@@ -180,7 +180,7 @@ public class MainFrame extends JFrame {
         crawlMonitorPanel = new CrawlPanel(this, crawlController, settingsController);
         submissionAnalysisPanel = new SubmissionAnalysisPanel(this, userController, analysisController);
         evaluationPanel = new EvaluationPanel(this, evaluationController);
-        settingsPanel = new SettingsPanel(this);
+        settingsPanel = new SettingsPanel(this, settingsController);
 
         // Thêm vào tabs
         tabs.addTab("  Quản Lý Nick  ", userManagementPanel);

@@ -79,7 +79,7 @@ public class GeminiAnalyzer {
             QUAN TRỌNG:
             - KHÔNG được kết luận chắc chắn code có sử dụng AI
             - Chỉ được đưa ra "mức độ nghi ngờ" (ai_suspicion_score từ 0 → 1)
-            - Mọi nhận định phải có evidence cụ thể
+            - Mọi nhận định phải có evidence cụ thể BẰNG TIẾNG VIỆT
             - Hãy khách quan: code tốt KHÔNG tự động nghĩa là AI-generated
             - Chỉ đánh giá cao khi có NHIỀU dấu hiệu bất thường cùng lúc
 
@@ -95,7 +95,7 @@ public class GeminiAnalyzer {
 
             ---
 
-            Trả về JSON thuần:
+            Trả về JSON thuần (TẤT CẢ NỘI DUNG PHẢI BẰNG TIẾNG VIỆT):
 
             {
                 "data_structures": [],
@@ -134,30 +134,40 @@ public class GeminiAnalyzer {
                 + độ dài code
                 + complexity
 
+            - explanation:
+            = nhận xét tổng quan BẰNG TIẾNG VIỆT về code, thuật toán, và các dấu hiệu AI (nếu có)
+
             ---
 
             Các dấu hiệu cần chú ý (mỗi indicator có score 0.0-1.0):
 
             1. too_clean:
             code cực kỳ sạch, không có dấu vết debug/trial-error
+            evidence: giải thích BẰNG TIẾNG VIỆT
 
             2. textbook_comments:
             comment mang tính giáo trình, giải thích quá chi tiết
+            evidence: giải thích BẰNG TIẾNG VIỆT
 
             3. perfect_naming:
             tên biến quá đầy đủ (adjacencyList vs adj)
+            evidence: giải thích BẰNG TIẾNG VIỆT
 
             4. ai_pattern:
             structure giống template AI (helper functions, abstraction không cần thiết)
+            evidence: giải thích BẰNG TIẾNG VIỆT
 
             5. too_perfect:
             không có lỗi nhỏ, không có code thừa, quá hoàn hảo
+            evidence: giải thích BẰNG TIẾNG VIỆT
 
             6. wrong_style:
             style không giống CP (Java verbose, class naming chuẩn)
+            evidence: giải thích BẰNG TIẾNG VIỆT
 
             ---
 
+            LƯU Ý: Tất cả các trường "evidence" và "explanation" PHẢI viết bằng TIẾNG VIỆT.
             Chỉ trả về JSON, không có text ngoài.
         """.formatted(
                 submission.getLanguage(),

@@ -12,9 +12,9 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.util.List;
 
-import javax.swing.*;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -48,15 +48,15 @@ public class EvaluationPanel extends JPanel {
     private DefaultTableModel rankModel;
     private JButton refreshBtn;
     private JComboBox<String> userComboBox;
-    private RadarChartPanel radarChart;
+    private HorizontalBarChartPanel barChart;
     private JLabel badgeLabel;
     private JLabel levelLabel;
     private JLabel statsLabel;
 
-    private List<UserScore> scores; // Cache để biết row nào = UserScore nào
+    private List<UserScore> scores;
 
     private static final String[] COLS = {
-        "#", "Handle", "CTDL Score", "Algo Score", "AI-Free", "Overall", "Level", "Badge", "AI Usage"
+        "#", "Handle", "Điểm CTDL", "Điểm Thuật Toán", "Không Dùng AI", "Tổng Điểm", "Level", "Huy Hiệu", "Tỷ Lệ Dùng AI"
     };
 
     private final MainFrame mainFrame;
@@ -67,12 +67,12 @@ public class EvaluationPanel extends JPanel {
         JLabel title = new JLabel("Bảng Xếp Hạng Năng Lực");
         title.setFont(new Font("Arial", Font.BOLD, 17));
         header.add(title);
-        
+
         userComboBox = new JComboBox<>();
         userComboBox.addActionListener(e -> {
             String handle = (String) userComboBox.getSelectedItem();
             if (handle == null || handle.startsWith("--")) return;
-            
+
             // Tìm trong bảng xếp hạng trước
             boolean found = false;
             if (scores != null) {
@@ -85,7 +85,7 @@ public class EvaluationPanel extends JPanel {
                     }
                 }
             }
-            
+
             // Nếu không có trong bảng xếp hạng (leaderboard), tải trực tiếp
             if (!found) {
                 controller.getUserScore(handle).thenAccept(score -> {
@@ -115,7 +115,6 @@ public class EvaluationPanel extends JPanel {
         header.add(refreshBtn);
         add(header, BorderLayout.NORTH);
 
-        // ---- Split: bảng vs chi tiết ----
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
             buildRankingTable(),
             buildDetailPanel()
@@ -161,7 +160,7 @@ public class EvaluationPanel extends JPanel {
                 if (row >= 0 && row < scores.size()) {
                     UserScore selected = scores.get(row);
                     showUserDetail(selected);
-                    
+
                     // Sync ComboBox (avoid recursive event)
                     if (!selected.getHandle().equals(userComboBox.getSelectedItem())) {
                         userComboBox.setSelectedItem(selected.getHandle());
@@ -179,10 +178,10 @@ public class EvaluationPanel extends JPanel {
         JPanel panel = new JPanel(new MigLayout("insets 12, wrap 1", "[grow, fill]", ""));
         panel.setBorder(BorderFactory.createTitledBorder("Chi Tiết"));
 
-        // Radar chart
-        radarChart = new RadarChartPanel();
-        radarChart.setPreferredSize(new Dimension(0, 280));
-        panel.add(radarChart, "h 280!, growx");
+        // Horizontal Bar chart
+        barChart = new HorizontalBarChartPanel();
+        barChart.setPreferredSize(new Dimension(0, 200));
+        panel.add(barChart, "h 200!, growx");
 
         // Badge
         badgeLabel = new JLabel("Chọn user để xem chi tiết");
@@ -246,7 +245,7 @@ public class EvaluationPanel extends JPanel {
     }
 
     private void showUserDetail(UserScore score) {
-        radarChart.setScores(score.getDsScore(), score.getAlgorithmScore(), score.getAiScore());
+        barChart.setScores(score.getDsScore(), score.getAlgorithmScore(), score.getAiScore());
         badgeLabel.setText(score.getBadge());
 
         levelLabel.setText("Level: " + score.getLevel().name());
@@ -276,18 +275,12 @@ public class EvaluationPanel extends JPanel {
             score.getTopAlgorithm()
         ));
 
-        radarChart.repaint();
+        barChart.repaint();
     }
 
     public void refreshData() { loadData(); }
 
-    // ==================== Radar Chart (Java2D) ====================
-
-    /**
-     * Vẽ radar chart với 3 trục: CTDL, Algorithm, AI-Free.
-     * Sử dụng Java2D (Graphics2D) trực tiếp, không cần thư viện biểu đồ nào.
-     */
-    static class RadarChartPanel extends JPanel {
+    static class HorizontalBarChartPanel extends JPanel {
 
         private double dsScore   = 0;
         private double algoScore = 0;
@@ -307,88 +300,78 @@ public class EvaluationPanel extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            int w  = getWidth();
-            int h  = getHeight();
-            int cx = w / 2;
-            int cy = h / 2;
-            int r  = Math.min(w, h) / 2 - 50;
-            if (r <= 0) return;
+            int w = getWidth();
+            int h = getHeight();
 
-            // 3 trục: trên (CTDL), phải-dưới (Algo), trái-dưới (AI-Free)
-            double[] angles = { Math.toRadians(-90), Math.toRadians(30), Math.toRadians(150) };
-            String[] labels = { "CTDL", "Algorithm", "AI-Free" };
-            double[] vals   = { dsScore / 100.0, algoScore / 100.0, aiScore / 100.0 };
+            if (w <= 100 || h <= 60) return;
 
-            // ---- Vẽ lưới nền (3 vòng tam giác) ----
-            g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 0, new float[]{ 4, 4 }, 0));
-            for (int ring = 1; ring <= 3; ring++) {
-                int rr = r * ring / 3;
-                int[] xp = new int[3], yp = new int[3];
-                for (int i = 0; i < 3; i++) {
-                    xp[i] = (int)(cx + rr * Math.cos(angles[i]));
-                    yp[i] = (int)(cy + rr * Math.sin(angles[i]));
-                }
-                g2.setColor(new Color(70, 70, 80));
-                g2.drawPolygon(xp, yp, 3);
+            // Margins
+            int leftMargin = 100;
+            int rightMargin = 60;
+            int topMargin = 20;
+            int bottomMargin = 20;
 
-                // Nhãn % trên trục đầu
-                g2.setColor(new Color(90, 90, 100));
-                g2.setFont(new Font("Arial", Font.PLAIN, 9));
-                int lx = (int)(cx + (rr + 4) * Math.cos(angles[0]));
-                int ly = (int)(cy + (rr + 4) * Math.sin(angles[0]));
-                g2.drawString(ring * 33 + "%", lx + 3, ly);
-            }
+            int chartWidth = w - leftMargin - rightMargin;
+            int barHeight = 35;
+            int barSpacing = 15;
 
-            // ---- Vẽ trục ----
-            g2.setStroke(new BasicStroke(1));
-            g2.setColor(new Color(90, 90, 100));
-            for (double angle : angles) {
-                g2.drawLine(cx, cy, (int)(cx + r * Math.cos(angle)), (int)(cy + r * Math.sin(angle)));
-            }
+            String[] labels = { "Điểm CTDL", "Điểm Thuật Toán", "Điểm Không Dùng AI" };
+            double[] values = { dsScore, algoScore, aiScore };
+            Color[] colors = {
+                new Color(100, 150, 200),
+                new Color(150, 100, 200),
+                new Color(100, 200, 150)
+            };
 
-            // ---- Vẽ vùng dữ liệu ----
-            int[] dx = new int[3], dy = new int[3];
+            int startY = topMargin;
+
+            // Draw bars
             for (int i = 0; i < 3; i++) {
-                dx[i] = (int)(cx + r * vals[i] * Math.cos(angles[i]));
-                dy[i] = (int)(cy + r * vals[i] * Math.sin(angles[i]));
-            }
+                int y = startY + i * (barHeight + barSpacing);
 
-            // Fill bán trong suốt
-            g2.setStroke(new BasicStroke(2));
-            g2.setColor(new Color(100, 100, 100, 90));
-            g2.fillPolygon(dx, dy, 3);
-            g2.setColor(new Color(150, 150, 150, 200));
-            g2.drawPolygon(dx, dy, 3);
-
-            // Điểm dữ liệu
-            g2.setColor(new Color(180, 180, 180));
-            for (int i = 0; i < 3; i++) {
-                g2.fillOval(dx[i] - 5, dy[i] - 5, 10, 10);
-            }
-
-            // ---- Nhãn trục ----
-            g2.setFont(new Font("Arial", Font.BOLD, 12));
-            g2.setColor(new Color(180, 180, 180));
-            for (int i = 0; i < 3; i++) {
-                int lx = (int)(cx + (r + 28) * Math.cos(angles[i]));
-                int ly = (int)(cy + (r + 28) * Math.sin(angles[i]));
-                FontMetrics fm = g2.getFontMetrics();
-
-                // Hiện thị tên trục + điểm
-                String scoreStr = String.format("%.0f", vals[i] * 100);
-                String line1 = labels[i];
-                String line2 = scoreStr + " pts";
-
-                int tw1 = fm.stringWidth(line1);
-                int tw2 = fm.stringWidth(line2);
-                g2.drawString(line1, lx - tw1 / 2, ly - 2);
-
-                g2.setColor(new Color(160, 160, 160));
-                g2.setFont(new Font("Arial", Font.BOLD, 11));
-                g2.drawString(line2, lx - tw2 / 2, ly + 13);
-
+                // Draw label
                 g2.setColor(new Color(180, 180, 180));
                 g2.setFont(new Font("Arial", Font.BOLD, 12));
+                g2.drawString(labels[i], 10, y + barHeight / 2 + 5);
+
+                // Draw background bar
+                g2.setColor(new Color(50, 50, 60));
+                g2.fillRoundRect(leftMargin, y, chartWidth, barHeight, 8, 8);
+
+                // Draw value bar
+                int barWidth = (int) (chartWidth * (values[i] / 100.0));
+                g2.setColor(colors[i]);
+                g2.fillRoundRect(leftMargin, y, barWidth, barHeight, 8, 8);
+
+                // Draw border
+                g2.setColor(new Color(80, 80, 90));
+                g2.setStroke(new BasicStroke(1));
+                g2.drawRoundRect(leftMargin, y, chartWidth, barHeight, 8, 8);
+
+                // Draw value text
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("Arial", Font.BOLD, 13));
+                String valueText = String.format("%.1f", values[i]);
+                FontMetrics fm = g2.getFontMetrics();
+                int textWidth = fm.stringWidth(valueText);
+
+                if (barWidth > textWidth + 10) {
+                    // Inside bar
+                    g2.drawString(valueText, leftMargin + barWidth - textWidth - 8, y + barHeight / 2 + 5);
+                } else {
+                    // Outside bar
+                    g2.setColor(new Color(180, 180, 180));
+                    g2.drawString(valueText, leftMargin + barWidth + 8, y + barHeight / 2 + 5);
+                }
+            }
+
+            // Draw scale markers
+            g2.setColor(new Color(90, 90, 100));
+            g2.setFont(new Font("Arial", Font.PLAIN, 10));
+            for (int i = 0; i <= 100; i += 25) {
+                int x = leftMargin + (int) (chartWidth * (i / 100.0));
+                int y = startY + 3 * (barHeight + barSpacing) + 5;
+                g2.drawString(String.valueOf(i), x - 8, y);
             }
         }
     }

@@ -28,16 +28,6 @@ import com.cf.analysis.model.analysis.Analysis;
 import com.cf.analysis.model.submission.Submission;
 
 import net.miginfocom.swing.MigLayout;
-
-/**
- * Dialog xem chi tiết một submission: source code đầy đủ + kết quả AI.
- * Mở khi double-click vào hàng trong bảng submissions.
- *
- * Layout:
- * - Header: tên bài + ngôn ngữ + verdict + thời gian
- * - Trái (60%): Source code với highlight
- * - Phải (40%): Kết quả phân tích AI
- */
 public class SubmissionDetailDialog extends JDialog {
 
     private final Submission submission;
@@ -255,11 +245,11 @@ public class SubmissionDetailDialog extends JDialog {
     }
 
     private void addIndicatorRow(JPanel parent, String label, boolean detected, String evidence) {
-        String icon  = detected ? "[!]" : "[OK]";
-        Color  color = detected ? new Color(200, 200, 200) : new Color(160, 160, 160);
-        String html  = "<html>" + icon + " <b>" + label + "</b>"
+        String status = detected ? "VI PHẠM" : "KHÔNG VI PHẠM";
+        Color  color = detected ? new Color(255, 100, 100) : new Color(100, 200, 100);
+        String html  = "<html><b>" + label + " - " + status + "</b>"
                        + (detected && evidence != null && !evidence.isBlank()
-                           ? " — <i>" + evidence + "</i>" : "")
+                           ? "<br>&nbsp;&nbsp;&nbsp;&nbsp;<i>" + evidence + "</i>" : "")
                        + "</html>";
         JLabel lbl = new JLabel(html);
         lbl.setForeground(color);

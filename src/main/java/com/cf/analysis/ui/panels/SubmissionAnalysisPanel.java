@@ -451,14 +451,22 @@ public class SubmissionAnalysisPanel extends JPanel {
 
     private void addIndicator(String label, boolean detected, String evidence) {
         JPanel row = new JPanel(new MigLayout("insets 4 6 4 6", "[]8[grow]", ""));
-        row.setBackground(detected ? new Color(80, 80, 80) : new Color(60, 60, 60));
-        JLabel icon = new JLabel(detected ? "[!]" : "[OK]");
+        row.setBackground(detected ? new Color(80, 50, 50) : new Color(50, 80, 50));
+
+        String status = detected ? "VI PHẠM" : "KHÔNG VI PHẠM";
+        Color statusColor = detected ? new Color(255, 100, 100) : new Color(100, 200, 100);
+
+        JLabel statusLabel = new JLabel(status);
+        statusLabel.setForeground(statusColor);
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 11));
+
         JLabel text = new JLabel("<html><b>" + label + "</b>"
                 + (detected && evidence != null && !evidence.isBlank()
                    ? "<br><small style='color:#aaa'>" + evidence + "</small>" : "")
                 + "</html>");
         text.setFont(new Font("Arial", Font.PLAIN, 11));
-        row.add(icon);
+
+        row.add(statusLabel);
         row.add(text, "growx");
         indicatorsPanel.add(row, "growx");
     }

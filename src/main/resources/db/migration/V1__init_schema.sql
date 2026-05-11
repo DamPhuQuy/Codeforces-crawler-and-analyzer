@@ -51,6 +51,7 @@ CREATE TABLE submissions (
     memory_consumed_bytes INTEGER NOT NULL DEFAULT 0,
     points REAL NOT NULL DEFAULT 0,
     source_code TEXT,
+    problem_name TEXT,
     submitted_at TIMESTAMP,
     crawled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     analyzed BOOLEAN NOT NULL DEFAULT FALSE

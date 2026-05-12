@@ -150,7 +150,8 @@ public class SettingsPanel extends JPanel {
             String key = controller.getGeminiApiKey();
             apiKeyField.setText(key);
             crawlIntervalSpinner.setValue(controller.getCrawlIntervalHours());
-            maxSubsSpinner.setValue(controller.getMaxSubmissionsPerCrawl());
+            int maxSubs = controller.getMaxSubmissionsPerCrawl();
+            maxSubsSpinner.setValue(Math.min(maxSubs, 10));
         } catch (Exception e) {
             // Ignore load errors, just show empty/default values
         }

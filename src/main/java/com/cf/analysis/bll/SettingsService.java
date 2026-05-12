@@ -16,9 +16,11 @@ public class SettingsService {
     public static final String KEY_MAX_SUBS = "max_submissions_per_crawl";
     public static final String KEY_ACCEPTED_ONLY = "crawl_accepted_only";
 
-    private final SettingsDAO settingsDAO = new SettingsDAO();
+    private final SettingsDAO settingsDAO;
 
-    // ==================== Gemini API Key ====================
+    public SettingsService(SettingsDAO settingsDAO) {
+        this.settingsDAO = settingsDAO;
+    }
 
     public String getGeminiApiKey() {
         try {
@@ -47,8 +49,8 @@ public class SettingsService {
 
     public int getMaxSubmissionsPerCrawl() {
         try {
-            return Integer.parseInt(settingsDAO.get(KEY_MAX_SUBS, "50"));
-        } catch (Exception e) { return 50; }
+            return Integer.parseInt(settingsDAO.get(KEY_MAX_SUBS, "20"));
+        } catch (Exception e) { return 20; }
     }
 
     public void setMaxSubmissionsPerCrawl(int max) throws SQLException {

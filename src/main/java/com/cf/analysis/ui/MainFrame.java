@@ -26,6 +26,7 @@ import com.cf.analysis.crawler.CodeforcesApiCaller;
 import com.cf.analysis.crawler.CodeforcesSourceCodeCrawler;
 import com.cf.analysis.dal.AnalysisDAO;
 import com.cf.analysis.dal.ProblemDAO;
+import com.cf.analysis.dal.SettingsDAO;
 import com.cf.analysis.dal.SubmissionDAO;
 import com.cf.analysis.dal.UserDAO;
 import com.cf.analysis.dal.UserScoreDAO;
@@ -152,6 +153,7 @@ public class MainFrame extends JFrame {
         AnalysisDAO analysisDAO = new AnalysisDAO(db, gson);
         UserScoreDAO userScoreDAO = new UserScoreDAO(db);
         ProblemDAO problemDAO = new ProblemDAO(db);
+        SettingsDAO settingsDAO = new SettingsDAO(db);
 
         // api
         CodeforcesApiCaller cfClient = new CodeforcesApiCaller(httpClient, gson);
@@ -160,7 +162,7 @@ public class MainFrame extends JFrame {
         CodeforcesSourceCodeCrawler crawler = new CodeforcesSourceCodeCrawler(cfClient);
 
         // Services
-        SettingsService settingsService = new SettingsService();
+        SettingsService settingsService = new SettingsService(settingsDAO);
         UserService userService = new UserService(userDAO, cfClient);
         AnalysisService analysisService = new AnalysisService(submissionDAO, analysisDAO, problemDAO, settingsService);
         CrawlService crawlService = new CrawlService(userDAO, submissionDAO, problemDAO, settingsService, crawler);

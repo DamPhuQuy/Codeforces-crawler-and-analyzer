@@ -113,7 +113,7 @@ public class SettingsPanel extends JPanel {
 
         section.add(new JLabel("Max submissions /lần:"));
         section.add(maxSubsSpinner, "w 70!, split 2");
-        section.add(new JLabel(" submissions (1-50), khuyến nghị: 10"), "wrap");
+        section.add(new JLabel(" submissions (1-20), khuyến nghị: 10"), "wrap");
 
         JButton saveCrawlBtn = new JButton("Lưu Cài Đặt Crawl");
         section.add(new JLabel(""));

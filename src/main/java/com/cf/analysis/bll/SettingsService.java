@@ -4,10 +4,6 @@ import java.sql.SQLException;
 
 import com.cf.analysis.dal.SettingsDAO;
 
-/**
- * BLL - Quản lý cài đặt ứng dụng (Gemini API key, crawl interval, ...).
- * Đọc/ghi từ bảng "settings" qua SettingsDAO.
- */
 public class SettingsService {
 
     // Tên các key trong bảng settings
@@ -34,8 +30,6 @@ public class SettingsService {
     public void setGeminiApiKey(String key) throws SQLException {
         settingsDAO.set(KEY_GEMINI_API, key);
     }
-
-    // ==================== Crawl Settings ====================
 
     public int getCrawlIntervalHours() {
         try {

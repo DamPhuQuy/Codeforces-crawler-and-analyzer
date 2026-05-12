@@ -1,5 +1,6 @@
 package com.cf.analysis.dal;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,7 +28,8 @@ public class SettingsDAO {
         ensureTable();
 
         String sql = "SELECT value FROM settings WHERE key = ?";
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, key);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -46,7 +48,8 @@ public class SettingsDAO {
                 VALUES (?, ?)
                 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
                 """;
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, key);
             ps.setString(2, value != null ? value : "");
             ps.executeUpdate();
@@ -60,7 +63,8 @@ public class SettingsDAO {
                     value TEXT NOT NULL DEFAULT ''
                 )
                 """;
-        try (Statement stmt = db.getConnection().createStatement()) {
+        try (Connection conn = db.getConnection();
+             Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
         }
     }

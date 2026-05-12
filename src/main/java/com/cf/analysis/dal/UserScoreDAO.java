@@ -1,5 +1,6 @@
 package com.cf.analysis.dal;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,7 +46,8 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
                 last_evaluated_at = NOW()
             """;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, score.getHandle());
             ps.setInt(2, score.getRating());
             ps.setDouble(3, score.getDsScore());
@@ -76,7 +78,8 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
             FROM user_scores WHERE handle = ?
             """;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapRow(rs);
@@ -93,7 +96,8 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
             """;
         List<UserScore> scores = new ArrayList<>();
 
-        try (Statement stmt = db.getConnection().createStatement();
+        try (Connection conn = db.getConnection();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 scores.add(mapRow(rs));
@@ -106,7 +110,8 @@ public class UserScoreDAO implements DataAccessInterface<UserScore, String> {
     public void delete(String handle) throws SQLException {
         String sql = "DELETE FROM user_scores WHERE handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ps.executeUpdate();
         }

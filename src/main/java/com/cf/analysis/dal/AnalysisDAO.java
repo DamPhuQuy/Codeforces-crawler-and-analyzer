@@ -1,9 +1,11 @@
 package com.cf.analysis.dal;
 
 import java.lang.reflect.Type;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,7 +81,8 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
                 analyzed_at       = CURRENT_TIMESTAMP
             """;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             int idx = 1;
             ps.setLong(1, a.getSubmissionId());
             ps.setDouble(++idx, safeFloat(aiResult.getAiConfidence()));
@@ -125,8 +128,9 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
             """;
 
         List<Analysis> list = new ArrayList<>();
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
-            ResultSet rs = ps.executeQuery();
+        try (Connection conn = db.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) list.add(mapRow(rs));
         }
         return list;
@@ -153,7 +157,8 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
             LIMIT 1
             """;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, submissionId);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapRow(rs);
@@ -165,7 +170,8 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
     public void delete(Long submissionId) throws SQLException {
         String sql = "DELETE FROM analyses WHERE submission_id = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, submissionId);
             ps.executeUpdate();
         }
@@ -192,7 +198,8 @@ public class AnalysisDAO implements DataAccessInterface<Analysis, Long> {
             """;
 
         List<Analysis> list = new ArrayList<>();
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) list.add(mapRow(rs));

@@ -1,5 +1,6 @@
 package com.cf.analysis.dal;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -50,7 +51,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
         Integer submissionId = sub.getId();
         String sql = submissionId != null ? sqlWithId : sqlWithoutId;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             int idx = 1;
             if (submissionId != null) {
                 ps.setInt(idx++, submissionId);
@@ -104,7 +106,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             """;
 
         List<Submission> list = new ArrayList<>();
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -132,7 +135,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             ORDER BY s.submitted_at DESC
             """;
         List<Submission> list = new ArrayList<>();
-        try (Statement stmt = db.getConnection().createStatement();
+        try (Connection conn = db.getConnection();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Submission sub = mapRow(rs);
@@ -156,7 +160,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             WHERE s.id = ?
             """;
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapRow(rs);
@@ -168,7 +173,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
     public void delete(Integer id) throws SQLException {
         String sql = "DELETE FROM submissions WHERE id = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
         }
@@ -177,7 +183,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
     public long getMaxSubmissionId(String handle) throws SQLException {
         String sql = "SELECT COALESCE(MAX(id), 0) FROM submissions WHERE user_handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return rs.getLong(1);
@@ -204,8 +211,9 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
             """;
 
         List<Submission> list = new ArrayList<>();
-        try (Statement stmt = db.getConnection().createStatement();
-             ResultSet rs   = stmt.executeQuery(sql)) {
+        try (Connection conn = db.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) list.add(mapRow(rs));
         }
         return list;
@@ -214,7 +222,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
     public boolean isSubmissionExists(Integer id) throws SQLException {
         String sql = "SELECT 1 FROM submissions WHERE id = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             ResultSet rs = ps.executeQuery();
             return rs.next();
@@ -224,7 +233,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
     public int countByHandle(String handle) throws SQLException {
         String sql = "SELECT COUNT(*) FROM submissions WHERE user_handle = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return rs.getInt(1);
@@ -235,7 +245,8 @@ public class SubmissionDAO implements DataAccessInterface<Submission, Integer> {
     public void updateSourceCode(long id, String sourceCode) throws SQLException {
         String sql = "UPDATE submissions SET source_code = ? WHERE id = ?";
 
-        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sourceCode);
             ps.setLong(2, id);
             ps.executeUpdate();

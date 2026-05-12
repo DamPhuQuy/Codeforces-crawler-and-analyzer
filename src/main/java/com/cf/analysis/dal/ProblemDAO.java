@@ -1,6 +1,7 @@
 package com.cf.analysis.dal;
 
 import java.sql.Array;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,7 +34,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
                 tags = EXCLUDED.tags
             """;
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, problem.getContestId());
             ps.setString(2, problem.getProblemsetName());
             ps.setString(3, problem.getIndex());
@@ -41,7 +43,7 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
             ps.setString(5, problem.getType());
             ps.setFloat(6, problem.getPoints());
             ps.setInt(7, problem.getRating());
-            Array tagsArray = database.getConnection().createArrayOf("VARCHAR", problem.getTags());
+            Array tagsArray = conn.createArrayOf("VARCHAR", problem.getTags());
             ps.setArray(8, tagsArray);
             ps.executeUpdate();
         }
@@ -54,7 +56,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
             FROM problems WHERE id = ?
             """;
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapRow(rs);
@@ -68,7 +71,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
             FROM problems WHERE contest_id = ? AND index = ?
             """;
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, contestId);
             ps.setString(2, index);
             ResultSet rs = ps.executeQuery();
@@ -85,7 +89,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
             """;
         List<Problem> problems = new ArrayList<>();
 
-        try (Statement stmt = database.getConnection().createStatement();
+        try (Connection conn = database.getConnection();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 problems.add(mapRow(rs));
@@ -102,7 +107,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
             """;
         List<Problem> problems = new ArrayList<>();
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, minRating);
             ps.setInt(2, maxRating);
             ResultSet rs = ps.executeQuery();
@@ -121,7 +127,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
             """;
         List<Problem> problems = new ArrayList<>();
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tag);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -135,7 +142,8 @@ public class ProblemDAO implements DataAccessInterface<Problem, Integer> {
     public void delete(Integer id) throws SQLException {
         String sql = "DELETE FROM problems WHERE id = ?";
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
         }

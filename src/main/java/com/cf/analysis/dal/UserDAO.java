@@ -1,5 +1,6 @@
 package com.cf.analysis.dal;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,7 +49,8 @@ public class UserDAO implements DataAccessInterface<User, String> {
                 title_photo_url = EXCLUDED.title_photo_url
             """;
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getHandle());
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getVkId());
@@ -83,7 +85,8 @@ public class UserDAO implements DataAccessInterface<User, String> {
         // rating desc
         List<User> users = new ArrayList<>();
 
-        try (Statement stmt = database.getConnection().createStatement();
+        try (Connection conn = database.getConnection();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 users.add(parseUserFromResultSet(rs));
@@ -106,7 +109,8 @@ public class UserDAO implements DataAccessInterface<User, String> {
             FROM users WHERE handle = ?
             """;
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return parseUserFromResultSet(rs);
@@ -117,7 +121,8 @@ public class UserDAO implements DataAccessInterface<User, String> {
     public void updateLastCrawl(String handle, LocalDateTime time) throws SQLException {
         String sql = "UPDATE users SET last_crawl_at = ? WHERE handle = ?";
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, time);
             ps.setString(2, handle);
             ps.executeUpdate();
@@ -127,7 +132,8 @@ public class UserDAO implements DataAccessInterface<User, String> {
     public void updateRating(String handle, int rating, int maxRating, String rank, String maxRank) throws SQLException {
         String sql = "UPDATE users SET rating = ?, max_rating = ?, rank = ?, max_rank = ? WHERE handle = ?";
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, rating);
             ps.setInt(2, maxRating);
             ps.setString(3, rank);
@@ -141,7 +147,8 @@ public class UserDAO implements DataAccessInterface<User, String> {
     public void delete(String handle) throws SQLException {
         String sql = "DELETE FROM users WHERE handle = ?";
 
-        try (PreparedStatement ps = database.getConnection().prepareStatement(sql)) {
+        try (Connection conn = database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, handle);
             ps.executeUpdate();
         }

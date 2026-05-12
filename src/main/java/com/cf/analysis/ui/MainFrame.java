@@ -131,12 +131,7 @@ public class MainFrame extends JFrame {
         textPanel.add(titleLabel, "wrap");
         textPanel.add(subLabel);
 
-        JLabel poweredBy = new JLabel("Powered by Google Gemini AI");
-        poweredBy.setFont(new Font("Arial", Font.PLAIN, 11));
-        poweredBy.setForeground(new Color(160, 160, 160));
-
         header.add(textPanel);
-        header.add(poweredBy);
 
         return header;
     }
